@@ -97,3 +97,32 @@ docker compose exec app php artisan migrate
   ```bash
   docker compose exec app php artisan <tên_lệnh>
   ```
+
+---
+
+## Dữ liệu mẫu (Database Seeding) & Tài khoản Demo
+
+### 1. Lệnh làm mới CSDL và nạp dữ liệu mẫu:
+```bash
+docker compose exec app php artisan migrate:fresh --seed
+```
+
+### 2. Danh sách tài khoản Demo:
+*Tất cả tài khoản đều sử dụng chung mật khẩu:* **`password`**
+
+| Vai trò (Role) | Email | Mật khẩu | Trạng thái | Mục đích kiểm thử |
+| :--- | :--- | :---: | :---: | :--- |
+| **Admin** | `admin@example.com` | `password` | `active` | Quản trị viên hệ thống, duyệt gian hàng & sản phẩm |
+| **Vendor** | `vendor@example.com` | `password` | `active` | Chủ gian hàng `Beauty Pals Official Store` |
+| **Customer** | `customer@example.com` | `password` | `active` | Khách hàng mua sắm (đã có sẵn địa chỉ nhận hàng mặc định) |
+
+### 3. Dữ liệu đã được Seed bao gồm:
+- **Người dùng & Phân quyền:** 3 tài khoản tương ứng với 3 vai trò (`admin`, `vendor`, `customer`).
+- **Địa chỉ giao hàng:** 1 địa chỉ mặc định liên kết với tài khoản `customer@example.com`.
+- **Gian hàng (Vendor):** `Beauty Pals Official Store` ở trạng thái **`approved`** (đã được duyệt bởi Admin).
+- **Thương hiệu (Brands):** `Innisfree`, `La Roche-Posay`.
+- **Danh mục (Categories):** Cấu trúc phân cấp cha - con (`Chăm sóc da mặt` ➔ `Kem dưỡng ẩm`).
+- **Loại da (Skin Types):** Da dầu, Da khô, Da nhạy cảm, Da hỗn hợp.
+- **Sản phẩm (Product):** `Kem Dưỡng Ẩm Green Tea Seed Hyaluronic Cream` ở trạng thái **`approved`** (đầy đủ hình ảnh, loại da phù hợp).
+- **Phân loại sản phẩm (SKU):** SKU mã `INN-GTC-50ML`, dung tích `50ml`, giá `450.000 VNĐ`.
+- **Quản lý kho & Lô hàng (Batches):** Lô hàng `LOT-2026-001` còn hạn sử dụng đến năm 2028, số lượng nhập 100, tồn kho khả dụng 95 hộp.
