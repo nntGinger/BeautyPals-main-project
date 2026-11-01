@@ -3,7 +3,6 @@
 use App\Models\User;
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults
@@ -18,6 +17,21 @@ return [
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Login lockout (A-02)
+    |--------------------------------------------------------------------------
+    |
+    | Failed attempts are tracked separately by email and by IP. Exceeding
+    | either limit temporarily blocks further login attempts.
+    |
+    */
+
+    'lockout' => [
+        'max_attempts' => (int) env('LOGIN_MAX_ATTEMPTS', 5),
+        'decay_seconds' => (int) env('LOGIN_DECAY_SECONDS', 900),
     ],
 
     /*

@@ -28,7 +28,11 @@ docker compose up -d --build
 
 echo ""
 echo "[3/6] Cai dat cac goi thu vien Composer..."
-docker compose exec -T app composer install --no-interaction
+docker compose exec -T -e COMPOSER_PROCESS_TIMEOUT=0 app composer install --no-interaction --prefer-dist --optimize-autoloader
+if ! docker compose exec -T app test -f vendor/autoload.php; then
+    echo "[!] LOI: Thieu vendor/autoload.php sau khi cai Composer."
+    exit 1
+fi
 
 echo ""
 echo "[4/6] Tao ma khoa ung dung (APP_KEY) va cap quyen thu muc..."
