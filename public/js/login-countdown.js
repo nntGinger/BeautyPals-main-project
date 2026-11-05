@@ -17,6 +17,7 @@
             if (remaining === 0) {
                 clearInterval(interval);
                 container.querySelector('[data-lockout-message]').textContent = 'Đã hết thời gian chờ. Bạn có thể thử đăng nhập lại.';
+                if (clock) clock.hidden = true;
                 container.querySelector('[data-lockout-note]').hidden = true;
                 container.setAttribute('role', 'status');
             }

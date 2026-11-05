@@ -14,7 +14,9 @@
                 <p class="meta" data-lockout-note>Bạn vẫn có thể đăng nhập bằng tài khoản khác.</p>
                 <noscript>Thời gian được cập nhật khi bạn tải lại trang.</noscript>
             </div>
-        @elseif ($errors->any())
+        @endif
+
+        @if ($errors->any() && ($lockoutSeconds <= 0 || strtolower(old('email', '')) !== strtolower($lockoutEmail)))
             <div class="flash-error" role="alert">{{ $errors->first() }}</div>
         @endif
 

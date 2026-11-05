@@ -9,7 +9,7 @@ class OrderPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, ['customer', 'vendor', 'admin'], true);
+        return in_array($user->role, ['customer', 'admin'], true);
     }
 
     public function view(User $user, Order $order): bool

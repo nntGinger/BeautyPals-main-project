@@ -40,6 +40,29 @@ class AuthorizationTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => 'vendor']))->get('/vendor')->assertForbidden();
     }
 
+    public function test_approved_vendor_visiting_pending_is_redirected_to_dashboard(): void
+    {
+        $vendor = Vendor::factory()->approved()->create();
+        $this->actingAs($vendor->owner)->get('/vendor/pending')->assertRedirect('/vendor');
+    }
+
+    public function test_order_and_vendor_order_view_any_permissions(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $customer = User::factory()->create(['role' => 'customer']);
+        $vendor = Vendor::factory()->approved()->create();
+        $unapprovedVendor = Vendor::factory()->create(['status' => 'pending']);
+
+        $this->assertTrue(Gate::forUser($admin)->allows('viewAny', \App\Models\Order::class));
+        $this->assertTrue(Gate::forUser($customer)->allows('viewAny', \App\Models\Order::class));
+        $this->assertFalse(Gate::forUser($vendor->owner)->allows('viewAny', \App\Models\Order::class));
+
+        $this->assertTrue(Gate::forUser($admin)->allows('viewAny', VendorOrder::class));
+        $this->assertTrue(Gate::forUser($vendor->owner)->allows('viewAny', VendorOrder::class));
+        $this->assertFalse(Gate::forUser($unapprovedVendor->owner)->allows('viewAny', VendorOrder::class));
+        $this->assertFalse(Gate::forUser($customer)->allows('viewAny', VendorOrder::class));
+    }
+
     public function test_role_alias_supports_pipe_separated_roles(): void
     {
         Route::middleware(['web', 'auth', 'role:customer|admin'])->get('/role-test', fn () => 'OK');
