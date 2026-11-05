@@ -83,4 +83,40 @@ class User extends Authenticatable
     {
         return $this->hasMany(Notification::class);
     }
+
+    public function isCustomer(): bool
+    {
+        return $this->role === 'customer';
+    }
+
+    public function isVendor(): bool
+    {
+        return $this->role === 'vendor';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->status === 'locked';
+    }
+
+    public function isApprovedVendor(): bool
+    {
+        return $this->isVendor() && $this->vendor?->status === 'approved';
+    }
+
+    public function homePath(): string
+    {
+        return match ($this->role) {
+            'admin' => route('admin.dashboard', absolute: false),
+            'vendor' => $this->isApprovedVendor()
+                ? route('vendor.dashboard', absolute: false)
+                : route('vendor.pending', absolute: false),
+            default => route('customer.dashboard', absolute: false),
+        };
+    }
 }

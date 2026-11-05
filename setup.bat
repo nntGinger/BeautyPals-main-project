@@ -40,16 +40,33 @@ echo     - Cac container da khoi dong xong.
 
 echo.
 echo [3/6] Kiem tra va cai dat thu vien Composer [vendor]...
-if not exist "vendor" (
-    echo     - Dang tai cac goi thu vien lan dau [mat khoang 1-2 phut]...
-    docker compose exec -T app composer install --no-interaction
-) else (
-    echo     - Thu muc vendor da co san, bo qua buoc tai ve.
-)
+    echo     - Dong bo thu vien trong Docker volume...
+    docker compose exec -T -e COMPOSER_PROCESS_TIMEOUT=0 app composer install --no-interaction --prefer-dist --optimize-autoloader
+    if errorlevel 1 (
+        echo.
+        echo [!] LOI: composer install that bai. Hay chay lai setup.bat hoac:
+        echo     docker compose exec -e COMPOSER_PROCESS_TIMEOUT=0 app composer install
+        echo.
+        pause
+        exit /b 1
+    )
+    docker compose exec -T app test -f vendor/autoload.php
+    if errorlevel 1 (
+        echo.
+        echo [!] LOI: Van thieu vendor\autoload.php sau khi cai Composer.
+        pause
+        exit /b 1
+    )
 
 echo.
 echo [4/6] Tao ma khoa ung dung [APP_KEY] va cap quyen thu muc...
 docker compose exec -T app php artisan key:generate --force
+if errorlevel 1 (
+    echo.
+    echo [!] LOI: Khong chay duoc php artisan. Kiem tra lai buoc Composer.
+    pause
+    exit /b 1
+)
 docker compose exec -T app chmod -R 777 storage bootstrap/cache >nul 2>&1
 
 echo.
@@ -63,6 +80,14 @@ if errorlevel 1 (
 echo.
 echo [6/6] Chay Migration tao bang co so du lieu...
 docker compose exec -T app php artisan migrate --force
+if errorlevel 1 (
+    echo.
+    echo [!] LOI: Migration that bai. Kiem tra MySQL container roi chay:
+    echo     docker compose exec app php artisan migrate --force
+    echo.
+    pause
+    exit /b 1
+)
 
 echo.
 echo ===================================================================
