@@ -28,8 +28,18 @@ class CommissionRule extends Model
 
     protected static function booted()
     {
-        static::saving(function ($rule) {
+        static::saving(function (CommissionRule $rule) {
             $rule->category_key = $rule->category_id ?? 0;
+
+            $rateStr = (string) $rule->rate;
+            if (!is_numeric($rateStr)
+                || bccomp($rateStr, '0', 2) < 0
+                || bccomp($rateStr, '100.00', 2) > 0
+            ) {
+                throw new \App\Exceptions\Commission\InvalidCommissionRateException(
+                    "Commission rate [{$rateStr}] is outside valid range [0, 100]."
+                );
+            }
         });
     }
 
