@@ -12,6 +12,7 @@ class CommissionRule extends Model
 
     protected $fillable = [
         'category_id',
+        'category_key',
         'rate',
         'effective_from',
         'is_active',

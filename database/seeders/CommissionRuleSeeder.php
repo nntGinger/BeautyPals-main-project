@@ -20,6 +20,7 @@ class CommissionRuleSeeder extends Seeder
         $defaultRule = CommissionRule::query()->firstOrCreate(
             [
                 'category_id'    => null,
+                'category_key'   => 0,
                 'effective_from' => '2026-10-01',
             ],
             [
@@ -52,6 +53,7 @@ class CommissionRuleSeeder extends Seeder
             $rule = CommissionRule::query()->firstOrCreate(
                 [
                     'category_id'    => $category->id,
+                    'category_key'   => $category->id,
                     'effective_from' => '2026-10-01',
                 ],
                 [

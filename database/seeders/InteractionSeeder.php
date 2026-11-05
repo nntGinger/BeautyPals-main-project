@@ -62,10 +62,18 @@ class InteractionSeeder extends Seeder
         $macProduct = Product::where('slug', 'son-thoi-mac-matte-lipstick-chili')->first();
 
         if ($lrpProduct) {
-            $customer1->wishlistProducts()->syncWithoutDetaching([$lrpProduct->id]);
+            \Illuminate\Support\Facades\DB::table('wishlists')->insertOrIgnore([
+                'user_id' => $customer1->id,
+                'product_id' => $lrpProduct->id,
+                'created_at' => now(),
+            ]);
         }
         if ($macProduct) {
-            $customer1->wishlistProducts()->syncWithoutDetaching([$macProduct->id]);
+            \Illuminate\Support\Facades\DB::table('wishlists')->insertOrIgnore([
+                'user_id' => $customer1->id,
+                'product_id' => $macProduct->id,
+                'created_at' => now(),
+            ]);
         }
 
         // 4. Notifications for Customer Demo
