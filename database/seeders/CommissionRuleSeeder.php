@@ -19,12 +19,12 @@ class CommissionRuleSeeder extends Seeder
         // 1. Default (platform-wide) rule
         $defaultRule = CommissionRule::query()->firstOrCreate(
             [
-                'category_id'    => null,
-                'category_key'   => 0,
+                'category_id' => null,
+                'category_key' => 0,
                 'effective_from' => '2026-10-01',
             ],
             [
-                'rate'      => '10.00',
+                'rate' => '10.00',
                 'is_active' => true,
             ],
         );
@@ -38,8 +38,8 @@ class CommissionRuleSeeder extends Seeder
         // 2. Category-specific rules
         $sampleRules = [
             'cham-soc-da-mat' => '12.00',
-            'cham-soc-da'     => '15.00',
-            'trang-diem'      => '15.00',
+            'cham-soc-da' => '15.00',
+            'trang-diem' => '15.00',
             'cham-soc-co-the' => '10.00',
         ];
 
@@ -52,12 +52,12 @@ class CommissionRuleSeeder extends Seeder
 
             $rule = CommissionRule::query()->firstOrCreate(
                 [
-                    'category_id'    => $category->id,
-                    'category_key'   => $category->id,
+                    'category_id' => $category->id,
+                    'category_key' => $category->id,
                     'effective_from' => '2026-10-01',
                 ],
                 [
-                    'rate'      => $rate,
+                    'rate' => $rate,
                     'is_active' => true,
                 ],
             );

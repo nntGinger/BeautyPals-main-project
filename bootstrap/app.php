@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureUserRole;
 use App\Http\Middleware\EnsureVendorApproved;
 use Illuminate\Foundation\Application;
@@ -14,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [\App\Http\Middleware\EnsureAccountActive::class]);
+        $middleware->web(append: [EnsureAccountActive::class]);
         $middleware->alias([
             'role' => EnsureUserRole::class,
             'vendor.approved' => EnsureVendorApproved::class,

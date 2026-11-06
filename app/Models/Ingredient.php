@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,6 +17,22 @@ class Ingredient extends Model
         'display_name',
         'function',
     ];
+
+    public function scopeSearch(Builder $query, ?string $keyword): Builder
+    {
+        $keyword = trim($keyword ?? '');
+        if ($keyword === '') {
+            return $query;
+        }
+
+        $pattern = '%'.addcslashes($keyword, '\\%_').'%';
+
+        return $query->where(function (Builder $query) use ($pattern): void {
+            $query->whereRaw("inci_name LIKE ? ESCAPE '\\\\'", [$pattern])
+                ->orWhereRaw("display_name LIKE ? ESCAPE '\\\\'", [$pattern])
+                ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->whereRaw("alias LIKE ? ESCAPE '\\\\'", [$pattern]));
+        });
+    }
 
     public function aliases(): HasMany
     {

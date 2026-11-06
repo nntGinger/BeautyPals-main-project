@@ -18,6 +18,7 @@
             --danger: #b42318;
         }
         * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
         body {
             margin: 0;
             font-family: "Segoe UI", system-ui, sans-serif;
@@ -77,6 +78,9 @@
             margin-bottom: 1rem;
         }
         .stack { display: grid; gap: 0.4rem; }
+        .flash-message { margin-bottom: 1rem; overflow-wrap: anywhere; }
+        .flash-success { padding: .85rem 1rem; border: 1px solid #b7dfc8; border-radius: 10px; background: #e5f4eb; color: #236542; }
+        select:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent-dark); outline-offset: 4px; }
         .meta { margin-top: 1rem; font-size: 0.95rem; }
     </style>
     <link rel="stylesheet" href="{{ asset('css/beautypals.css') }}">
@@ -89,6 +93,13 @@
             @auth
                 <span>{{ auth()->user()->name }} ({{ auth()->user()->role }})</span>
                 <a href="{{ auth()->user()->homePath() }}">Khu vực của tôi</a>
+                @if (auth()->user()->isApprovedVendor())
+                    <a href="{{ route('vendor.products.index') }}" @if (request()->routeIs('vendor.products.*')) aria-current="page" @endif>Sản phẩm của tôi</a>
+                @endif
+                @if (auth()->user()->isAdmin())
+                    <a href="{{ route('admin.products.index') }}" @if (request()->routeIs('admin.products.*')) aria-current="page" @endif>Duyệt sản phẩm</a>
+                    <a class="btn" href="{{ route('admin.ingredients.index') }}" @if (request()->routeIs('admin.ingredients.*')) aria-current="page" @endif>Quản lý thành phần</a>
+                @endif
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="btn-ghost">Đăng xuất</button>

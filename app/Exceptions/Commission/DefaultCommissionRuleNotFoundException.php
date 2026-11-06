@@ -2,6 +2,4 @@
 
 namespace App\Exceptions\Commission;
 
-class DefaultCommissionRuleNotFoundException extends CommissionException
-{
-}
+class DefaultCommissionRuleNotFoundException extends CommissionException {}

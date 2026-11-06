@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\CommissionRule;
 use App\Services\CommissionResult;
 use App\Services\CommissionService;
+use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,12 +21,13 @@ class CommissionServiceTest extends TestCase
     use RefreshDatabase;
 
     private CommissionService $service;
+
     private int $slugCounter = 0;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new CommissionService();
+        $this->service = new CommissionService;
     }
 
     /* ---------------------------------------------------------------
@@ -35,8 +37,8 @@ class CommissionServiceTest extends TestCase
     private function cat(string $name, ?int $parentId = null): Category
     {
         return Category::create([
-            'name'      => $name,
-            'slug'      => 'test-' . (++$this->slugCounter) . '-' . time(),
+            'name' => $name,
+            'slug' => 'test-'.(++$this->slugCounter).'-'.time(),
             'parent_id' => $parentId,
         ]);
     }
@@ -44,14 +46,14 @@ class CommissionServiceTest extends TestCase
     private function rule(?int $categoryId, string $rate, string $effectiveFrom, bool $isActive = true): CommissionRule
     {
         return CommissionRule::create([
-            'category_id'    => $categoryId,
-            'rate'           => $rate,
+            'category_id' => $categoryId,
+            'rate' => $rate,
             'effective_from' => $effectiveFrom,
-            'is_active'      => $isActive,
+            'is_active' => $isActive,
         ]);
     }
 
-    private function date(string $d = '2026-10-22'): \Carbon\CarbonInterface
+    private function date(string $d = '2026-10-22'): CarbonInterface
     {
         return Carbon::parse($d);
     }
@@ -63,7 +65,7 @@ class CommissionServiceTest extends TestCase
     public function test_direct_category_rule_takes_priority_over_parent_and_default(): void
     {
         $parent = $this->cat('Parent');
-        $child  = $this->cat('Child', $parent->id);
+        $child = $this->cat('Child', $parent->id);
 
         $this->rule(null, '10.00', '2026-01-01');           // default
         $this->rule($parent->id, '12.00', '2026-01-01');    // parent
@@ -80,7 +82,7 @@ class CommissionServiceTest extends TestCase
     public function test_parent_category_fallback(): void
     {
         $parent = $this->cat('Parent');
-        $child  = $this->cat('Child', $parent->id);
+        $child = $this->cat('Child', $parent->id);
 
         $this->rule(null, '10.00', '2026-01-01');
         $parentRule = $this->rule($parent->id, '12.00', '2026-01-01');
@@ -95,7 +97,7 @@ class CommissionServiceTest extends TestCase
     public function test_multi_level_ancestor_fallback(): void
     {
         $root = $this->cat('Root');
-        $mid  = $this->cat('Mid', $root->id);
+        $mid = $this->cat('Mid', $root->id);
         $leaf = $this->cat('Leaf', $mid->id);
 
         $this->rule(null, '10.00', '2026-01-01');
@@ -232,10 +234,10 @@ class CommissionServiceTest extends TestCase
         $this->expectExceptionMessageMatches('/outside valid range/');
 
         CommissionRule::create([
-            'category_id'    => null,
-            'rate'           => '-0.01',
+            'category_id' => null,
+            'rate' => '-0.01',
             'effective_from' => '2026-01-01',
-            'is_active'      => true,
+            'is_active' => true,
         ]);
     }
 
@@ -244,10 +246,10 @@ class CommissionServiceTest extends TestCase
         $this->expectException(InvalidCommissionRateException::class);
 
         CommissionRule::create([
-            'category_id'    => null,
-            'rate'           => '100.01',
+            'category_id' => null,
+            'rate' => '100.01',
             'effective_from' => '2026-01-01',
-            'is_active'      => true,
+            'is_active' => true,
         ]);
     }
 
@@ -257,13 +259,13 @@ class CommissionServiceTest extends TestCase
 
         // Insert bypassing model guard to simulate corrupt data
         DB::table('commission_rules')->insert([
-            'category_id'    => $cat->id,
-            'category_key'   => $cat->id,
-            'rate'           => 105.00,
+            'category_id' => $cat->id,
+            'category_key' => $cat->id,
+            'rate' => 105.00,
             'effective_from' => '2026-01-01',
-            'is_active'      => true,
-            'created_at'     => now(),
-            'updated_at'     => now(),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $this->expectException(InvalidCommissionRateException::class);
@@ -354,7 +356,7 @@ class CommissionServiceTest extends TestCase
 
     public function test_result_contains_all_expected_fields(): void
     {
-        $cat  = $this->cat('X');
+        $cat = $this->cat('X');
         $rule = $this->rule(null, '10.00', '2026-01-01');
 
         $r = $this->service->calculate($cat->id, 100_000, $this->date());

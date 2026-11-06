@@ -22,9 +22,9 @@ class CommissionService
      * Priority: category rule → parent category rule → … → root → default rule.
      * Rounding: half-up to the nearest VND, computed with pure integer arithmetic.
      *
-     * @param  int                   $categoryId  Product's category ID
-     * @param  int                   $lineTotal   Line-item total in VND (integer)
-     * @param  CarbonInterface|null  $at          Calculation date (defaults to today)
+     * @param  int  $categoryId  Product's category ID
+     * @param  int  $lineTotal  Line-item total in VND (integer)
+     * @param  CarbonInterface|null  $at  Calculation date (defaults to today)
      *
      * @throws CategoryNotFoundException
      * @throws CategoryCycleDetectedException
@@ -89,7 +89,7 @@ class CommissionService
 
         // 4. Validate rate read from DB
         $rateStr = (string) $rule->rate;
-        if (!is_numeric($rateStr)
+        if (! is_numeric($rateStr)
             || bccomp($rateStr, '0', 2) < 0
             || bccomp($rateStr, '100.00', 2) > 0
         ) {
@@ -104,9 +104,9 @@ class CommissionService
         //    commission = round_half_up(lineTotal × rate / 100)
         //               = intdiv(lineTotal × rateHundredths + 5000, 10000)
         $rateHundredths = (int) bcmul($rateStr, '100', 0);
-        $raw            = $lineTotal * $rateHundredths;         // commission × 10 000
-        $commission     = intdiv($raw + 5000, 10000);
-        $vendorAmount   = $lineTotal - $commission;
+        $raw = $lineTotal * $rateHundredths;         // commission × 10 000
+        $commission = intdiv($raw + 5000, 10000);
+        $vendorAmount = $lineTotal - $commission;
 
         return new CommissionResult(
             rate: $rateStr,
