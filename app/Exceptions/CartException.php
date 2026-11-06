@@ -48,7 +48,7 @@ final class CartException extends DomainException
     ): self {
         return new self(
             "Insufficient stock for SKU {$skuId}. "
-            . "Requested: {$requested}, available: {$available}."
+            ."Requested: {$requested}, available: {$available}."
         );
     }
 

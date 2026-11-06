@@ -14,17 +14,17 @@ class InventorySeeder extends Seeder
     {
         $admin = User::where('role', 'admin')->first();
 
-        // 1. Seed batches for all SKUs
+        // Seed 2 batches per SKU with distinct expiry dates (including near-expiry FEFO batches)
         $skus = Sku::all();
 
-        foreach ($skus as $sku) {
+        foreach ($skus as $index => $sku) {
             if ($sku->sku_code === 'INN-GTC-50ML') {
-                // Batch 1 (Nearer expiry - 6 months ahead, FEFO test target)
+                // Batch 1 (Nearer expiry - 45 days ahead, FEFO test target)
                 $b1 = Batch::query()->firstOrCreate(
                     ['sku_id' => $sku->id, 'batch_no' => 'LOT-2026-001'],
                     [
-                        'mfg_date' => now()->subMonths(6)->toDateString(),
-                        'exp_date' => now()->addMonths(6)->toDateString(),
+                        'mfg_date' => now()->subMonths(10)->toDateString(),
+                        'exp_date' => now()->addDays(45)->toDateString(),
                         'qty_received' => 50,
                         'qty_on_hand' => 45,
                         'qty_reserved' => 5,
@@ -50,21 +50,36 @@ class InventorySeeder extends Seeder
                 continue;
             }
 
-            // Standard batch for other SKUs
-            $batchNo = 'LOT-'.strtoupper(substr(md5($sku->sku_code), 0, 6));
-            $batch = Batch::query()->firstOrCreate(
-                ['sku_id' => $sku->id, 'batch_no' => $batchNo],
+            $hash = strtoupper(substr(md5($sku->sku_code), 0, 5));
+
+            // Batch A: Earlier expiry (either expiring soon <= 50 days or 6 months)
+            $expDaysA = ($index % 3 === 0) ? 40 : 180;
+            $batchA = Batch::query()->firstOrCreate(
+                ['sku_id' => $sku->id, 'batch_no' => "LOT-{$hash}-A"],
                 [
-                    'mfg_date' => now()->subMonths(2)->toDateString(),
-                    'exp_date' => now()->addMonths(22)->toDateString(),
-                    'qty_received' => 100,
-                    'qty_on_hand' => 90,
-                    'qty_reserved' => 5,
+                    'mfg_date' => now()->subMonths(6)->toDateString(),
+                    'exp_date' => now()->addDays($expDaysA)->toDateString(),
+                    'qty_received' => 40,
+                    'qty_on_hand' => 40,
+                    'qty_reserved' => 0,
                     'status' => 'active',
                 ],
             );
+            $this->createStockMovement($batchA, 40, $admin?->id);
 
-            $this->createStockMovement($batch, 100, $admin?->id);
+            // Batch B: Later expiry (18-24 months)
+            $batchB = Batch::query()->firstOrCreate(
+                ['sku_id' => $sku->id, 'batch_no' => "LOT-{$hash}-B"],
+                [
+                    'mfg_date' => now()->subMonths(1)->toDateString(),
+                    'exp_date' => now()->addMonths(20)->toDateString(),
+                    'qty_received' => 80,
+                    'qty_on_hand' => 80,
+                    'qty_reserved' => 0,
+                    'status' => 'active',
+                ],
+            );
+            $this->createStockMovement($batchB, 80, $admin?->id);
         }
     }
 

@@ -195,6 +195,33 @@ class DemoUserSeeder extends Seeder
             ],
         );
 
+        // 6b. Vendor 3 (Approved - Saigon Derma Lab)
+        $vendor3Owner = User::query()->updateOrCreate(
+            ['email' => 'vendor3@beautypals.test'],
+            [
+                'name' => 'Phạm Quốc Bảo',
+                'password' => self::PASSWORD,
+                'phone' => '0900000009',
+                'role' => 'vendor',
+                'status' => 'active',
+                'email_verified_at' => now(),
+            ],
+        );
+
+        Vendor::query()->updateOrCreate(
+            ['owner_user_id' => $vendor3Owner->id],
+            [
+                'store_name' => 'Saigon Derma Lab',
+                'tax_code' => '0318887777',
+                'phone' => '0900000009',
+                'address' => '150 Pasteur, Phường Bến Nghé, Quận 1, TP.HCM',
+                'license_file' => 'demo/licenses/vendor3-approved.pdf',
+                'status' => 'approved',
+                'approved_by' => $admin->id,
+                'approved_at' => now(),
+            ],
+        );
+
         // 7. Vendor 3 (Pending - Pending Glow Shop)
         $pendingOwner = User::query()->updateOrCreate(
             ['email' => 'vendor.pending@beautypals.test'],

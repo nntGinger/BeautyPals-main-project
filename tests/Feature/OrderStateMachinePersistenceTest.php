@@ -25,7 +25,7 @@ final class OrderStateMachinePersistenceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new OrderStateMachine();
+        $this->service = new OrderStateMachine;
     }
 
     private function createVendorOrder(): VendorOrder
@@ -37,7 +37,7 @@ final class OrderStateMachinePersistenceTest extends TestCase
             ->create();
 
         $order = Order::create([
-            'order_code' => 'ORD-' . Str::random(12),
+            'order_code' => 'ORD-'.Str::random(12),
             'customer_id' => $customer->id,
             'receiver' => 'Test Customer',
             'phone' => '0900000000',
@@ -56,7 +56,7 @@ final class OrderStateMachinePersistenceTest extends TestCase
         return VendorOrder::create([
             'order_id' => $order->id,
             'vendor_id' => $vendor->id,
-            'vo_code' => 'VO-' . Str::random(12),
+            'vo_code' => 'VO-'.Str::random(12),
             'status' => 'pending',
             'subtotal' => 150000,
             'shipping_fee' => 0,

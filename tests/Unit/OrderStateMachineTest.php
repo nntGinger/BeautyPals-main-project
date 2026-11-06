@@ -16,7 +16,7 @@ final class OrderStateMachineTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new OrderStateMachine();
+        $this->service = new OrderStateMachine;
     }
 
     public static function validTransitions(): array

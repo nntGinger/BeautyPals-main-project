@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Observers\AuditableObserver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
@@ -43,8 +44,12 @@ class ProductModerationService
                 (new ProductSubmissionValidator)->validate($product);
             }
             $old = $product->only(['status', 'reject_reason', 'moderated_by', 'moderated_at']);
-            $product->update(['status' => $to, 'reject_reason' => in_array($decision, ['reject', 'hide'], true) ? $reason : null,
-                'moderated_by' => $actor->id, 'moderated_at' => now()]);
+            AuditableObserver::withoutAuditing(fn () => $product->update([
+                'status' => $to,
+                'reject_reason' => in_array($decision, ['reject', 'hide'], true) ? $reason : null,
+                'moderated_by' => $actor->id,
+                'moderated_at' => now(),
+            ]));
             AuditLog::create(['actor_id' => $actor->id, 'action' => 'product.'.$decision, 'entity_type' => 'product',
                 'entity_id' => $product->id, 'old_values' => $old,
                 'new_values' => $product->only(['status', 'reject_reason', 'moderated_by', 'moderated_at']), 'ip' => $ip]);

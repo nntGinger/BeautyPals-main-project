@@ -35,4 +35,9 @@ class OrderPolicy
     {
         return $user->isAdmin();
     }
+
+    public function cancel(User $user, Order $order): bool
+    {
+        return $user->isAdmin() || ($user->isCustomer() && (int) $order->customer_id === (int) $user->id);
+    }
 }

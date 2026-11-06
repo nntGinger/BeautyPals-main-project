@@ -20,13 +20,14 @@ final class CartServiceTest extends TestCase
     use RefreshDatabase;
 
     private CartService $service;
+
     private User $customer;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->service = new CartService();
+        $this->service = new CartService;
 
         $this->customer = User::factory()
             ->customer()
@@ -52,20 +53,20 @@ final class CartServiceTest extends TestCase
 
         $category = Category::create([
             'name' => 'Test category',
-            'slug' => 'category-' . Str::lower(Str::random(12)),
+            'slug' => 'category-'.Str::lower(Str::random(12)),
         ]);
 
         $product = Product::create([
             'vendor_id' => $vendor->id,
             'category_id' => $category->id,
             'name' => 'Test product',
-            'slug' => 'product-' . Str::lower(Str::random(12)),
+            'slug' => 'product-'.Str::lower(Str::random(12)),
             'status' => $productStatus,
         ]);
 
         $sku = Sku::create([
             'product_id' => $product->id,
-            'sku_code' => 'SKU-' . Str::upper(Str::random(12)),
+            'sku_code' => 'SKU-'.Str::upper(Str::random(12)),
             'variant_name' => 'Default',
             'price' => $price,
             'is_active' => $active,
@@ -73,7 +74,7 @@ final class CartServiceTest extends TestCase
 
         Batch::create([
             'sku_id' => $sku->id,
-            'batch_no' => 'LOT-' . Str::upper(Str::random(12)),
+            'batch_no' => 'LOT-'.Str::upper(Str::random(12)),
             'mfg_date' => now()->subYears(2)->toDateString(),
             'exp_date' => (
                 $expired ? now()->subDay() : now()->addYear()

@@ -20,6 +20,7 @@ class ProductSeeder extends Seeder
         $admin = User::where('role', 'admin')->first();
         $vendor1 = Vendor::where('store_name', 'BeautyPals Official Store')->first();
         $vendor2 = Vendor::where('store_name', 'An Minh Cosmetics Store')->first();
+        $vendor3 = Vendor::where('store_name', 'Saigon Derma Lab')->first() ?? $vendor1;
 
         // 1. Innisfree Cream (Vendor 1)
         $brandInnisfree = Brand::where('name', 'Innisfree')->first();
@@ -261,6 +262,58 @@ class ProductSeeder extends Seeder
         $this->createSkus($p9, [
             ['code' => 'ANM-VITC-PENDING', 'name' => 'Lọ 30ml', 'price' => 420000, 'size' => '30ml'],
         ]);
+
+        // 10..30: 21 additional approved products across 3 vendors to reach 30 products (S2-12)
+        $extraCatalog = [
+            ['vendor' => $vendor3, 'brand' => $brandLRP, 'cat' => $catMoisturizer, 'slug' => 'kem-duong-la-roche-posay-cicaplast-baume-b5', 'name' => 'Kem Dưỡng Phục Hồi Da La Roche-Posay Cicaplast Baume B5+', 'inci' => 'Panthenol', 'sku' => 'LRP-B5-40ML', 'price' => 385000, 'size' => '40ml'],
+            ['vendor' => $vendor3, 'brand' => $brandLRP, 'cat' => $catCleanser, 'slug' => 'gel-rua-mat-la-roche-posay-effaclar', 'name' => 'Gel Rửa Mặt La Roche-Posay Effaclar Purifying Foaming Gel', 'inci' => 'Zinc PCA', 'sku' => 'LRP-EFF-200ML', 'price' => 395000, 'size' => '200ml'],
+            ['vendor' => $vendor3, 'brand' => $brandCeraVe, 'cat' => $catMoisturizer, 'slug' => 'kem-duong-cerave-moisturizing-cream', 'name' => 'Kem Dưỡng Ẩm CeraVe Moisturizing Cream Phục Hồi Hàng Rào Da', 'inci' => 'Ceramide NP', 'sku' => 'CRV-CREAM-340G', 'price' => 410000, 'size' => '340g'],
+            ['vendor' => $vendor3, 'brand' => $brandTO, 'cat' => $catSerum, 'slug' => 'serum-the-ordinary-hyaluronic-acid-2-b5', 'name' => 'Tinh Chất Cấp Nước The Ordinary Hyaluronic Acid 2% + B5', 'inci' => 'Sodium Hyaluronate', 'sku' => 'TO-HA-30ML', 'price' => 235000, 'size' => '30ml'],
+            ['vendor' => $vendor3, 'brand' => $brandTO, 'cat' => $catSerum, 'slug' => 'serum-the-ordinary-alpha-arbutin-2-ha', 'name' => 'Tinh Chất Dưỡng Sáng The Ordinary Alpha Arbutin 2% + HA', 'inci' => 'Alpha-Arbutin', 'sku' => 'TO-ARB-30ML', 'price' => 290000, 'size' => '30ml'],
+            ['vendor' => $vendor3, 'brand' => $brandKlairs, 'cat' => $catMoisturizer, 'slug' => 'kem-duong-klairs-midnight-blue-calming-cream', 'name' => 'Kem Dưỡng Làm Dịu Da Klairs Midnight Blue Calming Cream', 'inci' => 'Centella Asiatica Extract', 'sku' => 'KLA-BLUE-60ML', 'price' => 445000, 'size' => '60ml'],
+            ['vendor' => $vendor3, 'brand' => $brandInnisfree, 'cat' => $catCleanser, 'slug' => 'sua-rua-mat-innisfree-volcanic-pore-bha', 'name' => 'Sữa Rửa Mặt Đá Núi Lửa Innisfree Super Volcanic Pore BHA', 'inci' => 'Salicylic Acid', 'sku' => 'INN-VOL-150ML', 'price' => 240000, 'size' => '150ml'],
+            ['vendor' => $vendor3, 'brand' => $brandAnessa, 'cat' => $catSunscreen, 'slug' => 'gel-chong-nang-anessa-whitening-uv-gel', 'name' => 'Gel Chống Nắng Dưỡng Sáng Anessa Brightening UV Gel 90g', 'inci' => 'Tranexamic Acid', 'sku' => 'ANE-GEL-90G', 'price' => 495000, 'size' => '90g'],
+            ['vendor' => $vendor3, 'brand' => $brandMAC, 'cat' => $catLipstick, 'slug' => 'son-kem-mac-powder-kiss-liquid-devoted-to-chili', 'name' => 'Son Kem Lì MAC Powder Kiss Liquid Lipcolour Devoted To Chili', 'inci' => 'Tocopherol', 'sku' => 'MAC-PK-DEVOTED', 'price' => 690000, 'size' => '5ml'],
+            ['vendor' => $vendor3, 'brand' => $brandCeraVe, 'cat' => $catCleanser, 'slug' => 'sua-rua-mat-cerave-sa-smoothing-cleanser', 'name' => 'Sữa Rửa Mặt Giảm Mụn Sần CeraVe SA Smoothing Cleanser', 'inci' => 'Salicylic Acid', 'sku' => 'CRV-SA-236ML', 'price' => 330000, 'size' => '236ml'],
+            ['vendor' => $vendor1, 'brand' => $brandInnisfree, 'cat' => $catSerum, 'slug' => 'tinh-chat-innisfree-retinol-cica-repair-ampoule', 'name' => 'Tinh Chất Tái Tạo Da Innisfree Retinol Cica Repair Ampoule', 'inci' => 'Retinol', 'sku' => 'INN-RET-30ML', 'price' => 680000, 'size' => '30ml'],
+            ['vendor' => $vendor1, 'brand' => $brandInnisfree, 'cat' => $catToner, 'slug' => 'nuoc-can-bang-innisfree-green-tea-hyaluronic-skin', 'name' => 'Nước Cân Bằng Trà Xanh Innisfree Green Tea Hyaluronic Skin', 'inci' => 'Camellia Sinensis Leaf Extract', 'sku' => 'INN-GTS-170ML', 'price' => 390000, 'size' => '170ml'],
+            ['vendor' => $vendor1, 'brand' => $brandLRP, 'cat' => $catSerum, 'slug' => 'tinh-chat-la-roche-posay-hyalu-b5-serum', 'name' => 'Tinh Chất Phục Hồi Căng Mịn La Roche-Posay Hyalu B5 Serum', 'inci' => 'Panthenol', 'sku' => 'LRP-HYALU-30ML', 'price' => 860000, 'size' => '30ml'],
+            ['vendor' => $vendor1, 'brand' => $brandLRP, 'cat' => $catSerum, 'slug' => 'tinh-chat-la-roche-posay-effaclar-ultra-concentrated', 'name' => 'Tinh Chất Giảm Mụn La Roche-Posay Effaclar Ultra Concentrated Serum', 'inci' => 'Salicylic Acid', 'sku' => 'LRP-EFFSER-30ML', 'price' => 790000, 'size' => '30ml'],
+            ['vendor' => $vendor1, 'brand' => $brandCeraVe, 'cat' => $catSerum, 'slug' => 'tinh-chat-cerave-resurfacing-retinol-serum', 'name' => 'Tinh Chất Mờ Thâm Mụn CeraVe Resurfacing Retinol Serum', 'inci' => 'Retinol', 'sku' => 'CRV-RET-30ML', 'price' => 460000, 'size' => '30ml'],
+            ['vendor' => $vendor1, 'brand' => $brandAnessa, 'cat' => $catSunscreen, 'slug' => 'sua-chong-nang-anessa-mild-milk-da-nhay-cam', 'name' => 'Sữa Chống Nắng Dịu Nhẹ Anessa Moisture UV Sunscreen Mild Milk', 'inci' => 'Glycerin', 'sku' => 'ANE-MILD-60ML', 'price' => 565000, 'size' => '60ml'],
+            ['vendor' => $vendor2, 'brand' => $brandKlairs, 'cat' => $catSerum, 'slug' => 'tinh-chat-klairs-freshly-juiced-vitamin-drop', 'name' => 'Tinh Chất Dưỡng Sáng Klairs Freshly Juiced Vitamin Drop 35ml', 'inci' => 'Ascorbic Acid', 'sku' => 'KLA-VITC-35ML', 'price' => 355000, 'size' => '35ml'],
+            ['vendor' => $vendor2, 'brand' => $brandTO, 'cat' => $catToner, 'slug' => 'nuoc-can-bang-the-ordinary-glycolic-acid-7', 'name' => 'Nước Hoa Hồng Tẩy Tế Bào Chết The Ordinary Glycolic Acid 7%', 'inci' => 'Glycolic Acid', 'sku' => 'TO-GLY-240ML', 'price' => 320000, 'size' => '240ml'],
+            ['vendor' => $vendor2, 'brand' => $brandTO, 'cat' => $catSerum, 'slug' => 'tinh-chat-the-ordinary-salicylic-acid-2', 'name' => 'Tinh Chất Giảm Mụn Đầu Đen The Ordinary Salicylic Acid 2% Solution', 'inci' => 'Salicylic Acid', 'sku' => 'TO-SAL-30ML', 'price' => 245000, 'size' => '30ml'],
+            ['vendor' => $vendor2, 'brand' => $brandMAC, 'cat' => $catLipstick, 'slug' => 'son-thoi-mac-locked-kiss-ink-ruby-woo', 'name' => 'Son Thỏi Lì MAC Retro Matte Lipstick - Màu Ruby Woo Đỏ Thuần', 'inci' => 'Tocopherol', 'sku' => 'MAC-LIP-RUBYWOO', 'price' => 620000, 'size' => '3g'],
+            ['vendor' => $vendor2, 'brand' => $brandKlairs, 'cat' => $catSunscreen, 'slug' => 'kem-chong-nang-klairs-all-day-airy-sunscreen', 'name' => 'Kem Chống Nắng Mỏng Nhẹ Klairs All-Day Airy Sunscreen SPF50+', 'inci' => 'Niacinamide', 'sku' => 'KLA-SUN-50G', 'price' => 345000, 'size' => '50g'],
+        ];
+
+        foreach ($extraCatalog as $idx => $item) {
+            $prod = Product::query()->firstOrCreate(
+                ['slug' => $item['slug']],
+                [
+                    'vendor_id' => $item['vendor']->id,
+                    'brand_id' => $item['brand']?->id,
+                    'category_id' => $item['cat']->id,
+                    'name' => $item['name'],
+                    'description' => 'Sản phẩm chính hãng phân phối tại hệ thống BeautyPals với thông tin thành phần chuẩn INCI và quản lý hạn dùng theo lô FEFO.',
+                    'status' => 'approved',
+                    'moderated_by' => $admin?->id,
+                    'moderated_at' => now(),
+                ],
+            );
+
+            $this->attachIngredients($prod, [
+                ['inci' => $item['inci'], 'pos' => 1, 'conc' => 2.00],
+                ['inci' => 'Glycerin', 'pos' => 2, 'conc' => 5.00],
+            ]);
+            $this->createImages($prod, [
+                ['path' => 'products/demo_product_'.($idx + 10).'.jpg', 'sort' => 1],
+            ]);
+            $this->createSkus($prod, [
+                ['code' => $item['sku'], 'name' => 'Tiêu chuẩn '.$item['size'], 'price' => $item['price'], 'size' => $item['size']],
+            ]);
+        }
     }
 
     private function attachSkinTypes(Product $product, array $skinTypeNames): void
