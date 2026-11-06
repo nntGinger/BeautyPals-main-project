@@ -59,7 +59,7 @@ class Product extends Model
 
     public function skus(): HasMany
     {
-        return $this->hasMany(Sku::class);
+        return $this->hasMany(Sku::class)->orderBy('id');
     }
 
     public function images(): HasMany

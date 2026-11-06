@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\Commission\InvalidCommissionRateException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,11 +34,11 @@ class CommissionRule extends Model
             $rule->category_key = $rule->category_id ?? 0;
 
             $rateStr = (string) $rule->rate;
-            if (!is_numeric($rateStr)
+            if (! is_numeric($rateStr)
                 || bccomp($rateStr, '0', 2) < 0
                 || bccomp($rateStr, '100.00', 2) > 0
             ) {
-                throw new \App\Exceptions\Commission\InvalidCommissionRateException(
+                throw new InvalidCommissionRateException(
                     "Commission rate [{$rateStr}] is outside valid range [0, 100]."
                 );
             }

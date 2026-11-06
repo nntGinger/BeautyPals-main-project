@@ -7,6 +7,11 @@ use App\Models\User;
 
 class ProductPolicy
 {
+    public function viewManaged(User $user, Product $product): bool
+    {
+        return $user->isApprovedVendor() && $user->vendor->id === $product->vendor_id;
+    }
+
     public function viewAny(?User $user): bool
     {
         return true;
@@ -43,5 +48,15 @@ class ProductPolicy
     public function moderate(User $user, Product $product): bool
     {
         return $user->isAdmin();
+    }
+
+    public function moderateAny(User $user): bool
+    {
+        return $user->isAdmin();
+    }
+
+    public function submit(User $user, Product $product): bool
+    {
+        return $this->viewManaged($user, $product);
     }
 }

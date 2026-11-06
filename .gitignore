@@ -25,3 +25,10 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Personal MySQL test setup (not shared or committed)
+/.env.testing
+/.env.testing.example
+/phpunit.local.xml
+/.testing-local/
+/database/testing/create_test_database.sql

@@ -46,11 +46,12 @@ class InventorySeeder extends Seeder
                     ],
                 );
                 $this->createStockMovement($b2, 100, $admin?->id);
+
                 continue;
             }
 
             // Standard batch for other SKUs
-            $batchNo = 'LOT-' . strtoupper(substr(md5($sku->sku_code), 0, 6));
+            $batchNo = 'LOT-'.strtoupper(substr(md5($sku->sku_code), 0, 6));
             $batch = Batch::query()->firstOrCreate(
                 ['sku_id' => $sku->id, 'batch_no' => $batchNo],
                 [

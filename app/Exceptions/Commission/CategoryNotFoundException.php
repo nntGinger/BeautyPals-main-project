@@ -2,6 +2,4 @@
 
 namespace App\Exceptions\Commission;
 
-class CategoryNotFoundException extends CommissionException
-{
-}
+class CategoryNotFoundException extends CommissionException {}
