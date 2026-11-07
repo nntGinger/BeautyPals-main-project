@@ -42,3 +42,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/', AdminDashboardController::class)->name('dashboard');
     Route::get('/dashboard', AdminDashboardController::class);
 });
+
+// A-18 / UC04 public catalog API
+require __DIR__.'/uc04_catalog.php';
