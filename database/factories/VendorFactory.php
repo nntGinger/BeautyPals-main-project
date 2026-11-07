@@ -39,9 +39,27 @@ class VendorFactory extends Factory
     public function pending(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'pending',
+            'status'      => 'pending',
             'approved_by' => null,
             'approved_at' => null,
+        ]);
+    }
+
+    public function rejected(?string $reason = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status'        => 'rejected',
+            'reject_reason' => $reason ?? 'Hồ sơ không hợp lệ.',
+            'approved_by'   => null,
+            'approved_at'   => null,
+        ]);
+    }
+
+    public function suspended(?string $reason = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status'           => 'suspended',
+            'suspended_reason' => $reason ?? 'Vi phạm điều khoản sử dụng.',
         ]);
     }
 }

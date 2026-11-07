@@ -32,12 +32,15 @@ class AuthorizationTest extends TestCase
 
     public function test_unapproved_or_missing_vendor_cannot_enter_vendor_area(): void
     {
+        // Since A-12, EnsureVendorApproved redirects to vendor.pending instead of aborting 403.
         foreach (['pending', 'rejected', 'suspended'] as $status) {
             $vendor = Vendor::factory()->create(['status' => $status]);
-            $this->actingAs($vendor->owner)->get('/vendor')->assertForbidden();
+            $this->actingAs($vendor->owner)->get('/vendor')->assertRedirect(route('vendor.pending'));
             $this->get('/vendor/pending')->assertOk();
         }
-        $this->actingAs(User::factory()->create(['role' => 'vendor']))->get('/vendor')->assertForbidden();
+        // Vendor user without a vendor record → also redirected to pending
+        $this->actingAs(User::factory()->create(['role' => 'vendor']))->get('/vendor')
+            ->assertRedirect(route('vendor.pending'));
     }
 
     public function test_role_alias_supports_pipe_separated_roles(): void

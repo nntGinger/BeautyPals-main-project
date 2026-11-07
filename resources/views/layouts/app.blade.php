@@ -86,6 +86,9 @@
         <nav class="nav">
             @auth
                 <span>{{ auth()->user()->name }} ({{ auth()->user()->role }})</span>
+                @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.vendors.index') }}">Quản lý Vendor</a>
+                @endif
                 <a href="{{ auth()->user()->homePath() }}">Khu vực của tôi</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

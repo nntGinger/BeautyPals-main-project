@@ -19,7 +19,8 @@ class EnsureVendorApproved
         $vendor = $user->vendor;
 
         if (! $vendor || $vendor->status !== 'approved') {
-            abort(403, 'Cửa hàng của bạn chưa được duyệt nên chưa thể vào khu vực vendor.');
+            // Redirect to the pending/status explanation page instead of a bare 403.
+            return redirect()->route('vendor.pending');
         }
 
         return $next($request);
