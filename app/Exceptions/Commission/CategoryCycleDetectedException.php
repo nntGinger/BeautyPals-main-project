@@ -2,6 +2,4 @@
 
 namespace App\Exceptions\Commission;
 
-class CategoryCycleDetectedException extends CommissionException
-{
-}
+class CategoryCycleDetectedException extends CommissionException {}

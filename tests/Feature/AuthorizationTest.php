@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Vendor;
@@ -53,9 +54,9 @@ class AuthorizationTest extends TestCase
         $vendor = Vendor::factory()->approved()->create();
         $unapprovedVendor = Vendor::factory()->create(['status' => 'pending']);
 
-        $this->assertTrue(Gate::forUser($admin)->allows('viewAny', \App\Models\Order::class));
-        $this->assertTrue(Gate::forUser($customer)->allows('viewAny', \App\Models\Order::class));
-        $this->assertFalse(Gate::forUser($vendor->owner)->allows('viewAny', \App\Models\Order::class));
+        $this->assertTrue(Gate::forUser($admin)->allows('viewAny', Order::class));
+        $this->assertTrue(Gate::forUser($customer)->allows('viewAny', Order::class));
+        $this->assertFalse(Gate::forUser($vendor->owner)->allows('viewAny', Order::class));
 
         $this->assertTrue(Gate::forUser($admin)->allows('viewAny', VendorOrder::class));
         $this->assertTrue(Gate::forUser($vendor->owner)->allows('viewAny', VendorOrder::class));

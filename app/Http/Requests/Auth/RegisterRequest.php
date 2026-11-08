@@ -3,13 +3,14 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->merge(['email' => \Illuminate\Support\Str::lower(trim((string) $this->input('email', '')))]);
+        $this->merge(['email' => Str::lower(trim((string) $this->input('email', '')))]);
     }
 
     public function authorize(): bool

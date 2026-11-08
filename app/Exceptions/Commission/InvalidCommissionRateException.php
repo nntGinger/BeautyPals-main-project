@@ -2,6 +2,4 @@
 
 namespace App\Exceptions\Commission;
 
-class InvalidCommissionRateException extends CommissionException
-{
-}
+class InvalidCommissionRateException extends CommissionException {}

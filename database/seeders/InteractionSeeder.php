@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\Sku;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class InteractionSeeder extends Seeder
 {
@@ -62,14 +63,14 @@ class InteractionSeeder extends Seeder
         $macProduct = Product::where('slug', 'son-thoi-mac-matte-lipstick-chili')->first();
 
         if ($lrpProduct) {
-            \Illuminate\Support\Facades\DB::table('wishlists')->insertOrIgnore([
+            DB::table('wishlists')->insertOrIgnore([
                 'user_id' => $customer1->id,
                 'product_id' => $lrpProduct->id,
                 'created_at' => now(),
             ]);
         }
         if ($macProduct) {
-            \Illuminate\Support\Facades\DB::table('wishlists')->insertOrIgnore([
+            DB::table('wishlists')->insertOrIgnore([
                 'user_id' => $customer1->id,
                 'product_id' => $macProduct->id,
                 'created_at' => now(),
