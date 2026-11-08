@@ -81,3 +81,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/{vendor}/license', [AdminVendorController::class, 'downloadLicense'])->name('license');
     });
 });
+
+// A-18 / UC04 public catalog API
+require __DIR__.'/uc04_catalog.php';
