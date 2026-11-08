@@ -92,6 +92,9 @@
         <nav class="nav">
             @auth
                 <span>{{ auth()->user()->name }} ({{ auth()->user()->role }})</span>
+                @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.vendors.index') }}">Quản lý Vendor</a>
+                @endif
                 <a href="{{ auth()->user()->homePath() }}">Khu vực của tôi</a>
                 @if (auth()->user()->isApprovedVendor())
                     <a href="{{ route('vendor.products.index') }}" @if (request()->routeIs('vendor.products.*')) aria-current="page" @endif>Sản phẩm của tôi</a>
