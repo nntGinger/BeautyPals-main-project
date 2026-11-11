@@ -33,6 +33,10 @@ class IngredientSearchTest extends TestCase
         $this->actingAs(User::factory()->admin()->create());
         $this->getJson(route('ingredients.lookup', ['q' => '_']))->assertJsonCount(1, 'data');
         $this->getJson(route('ingredients.lookup', ['q' => '%']))->assertJsonCount(1, 'data');
+        foreach (['Vitamin!B', 'Vitamin\\B'] as $name) {
+            $literal = Ingredient::create(['inci_name' => $name, 'display_name' => $name]);
+            $this->assertSame([$literal->id], Ingredient::search($name)->pluck('id')->all());
+        }
     }
 
     public function test_admin_index_paginates_and_escapes_names(): void

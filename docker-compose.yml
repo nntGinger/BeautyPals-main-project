@@ -12,6 +12,14 @@ services:
     networks:
       - laravel_net
 
+  scheduler:
+    extends:
+      service: app
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      - app
+      - db
+
   webserver:
     image: nginx:alpine
     restart: unless-stopped

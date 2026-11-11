@@ -25,12 +25,12 @@ class Ingredient extends Model
             return $query;
         }
 
-        $pattern = '%'.addcslashes($keyword, '\\%_').'%';
+        $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $keyword).'%';
 
         return $query->where(function (Builder $query) use ($pattern): void {
-            $query->whereRaw("inci_name LIKE ? ESCAPE '\\\\'", [$pattern])
-                ->orWhereRaw("display_name LIKE ? ESCAPE '\\\\'", [$pattern])
-                ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->whereRaw("alias LIKE ? ESCAPE '\\\\'", [$pattern]));
+            $query->whereRaw("inci_name LIKE ? ESCAPE '!'", [$pattern])
+                ->orWhereRaw("display_name LIKE ? ESCAPE '!'", [$pattern])
+                ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->whereRaw("alias LIKE ? ESCAPE '!'", [$pattern]));
         });
     }
 
