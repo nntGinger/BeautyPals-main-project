@@ -65,6 +65,11 @@ class VendorOrder extends Model
         return $this->hasMany(OrderStatusHistory::class);
     }
 
+    public function statusHistory(): HasMany
+    {
+        return $this->statusHistories();
+    }
+
     public function settlementLine(): HasOne
     {
         return $this->hasOne(SettlementLine::class);

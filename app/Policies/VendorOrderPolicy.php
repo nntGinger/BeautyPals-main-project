@@ -21,4 +21,9 @@ class VendorOrderPolicy
     {
         return $this->view($user, $order);
     }
+
+    public function updateStatus(User $user, VendorOrder $order): bool
+    {
+        return $this->view($user, $order);
+    }
 }

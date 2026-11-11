@@ -12,4 +12,18 @@ enum OrderStatus: string
     case COMPLETED = 'completed';
     case CANCELLED = 'cancelled';
     case REJECTED = 'rejected';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::PENDING => 'Chờ xác nhận',
+            self::CONFIRMED => 'Đã xác nhận',
+            self::PACKED => 'Đã đóng gói',
+            self::SHIPPED => 'Đang giao',
+            self::DELIVERED => 'Đã giao',
+            self::COMPLETED => 'Hoàn tất',
+            self::CANCELLED => 'Đã hủy',
+            self::REJECTED => 'Đã từ chối',
+        };
+    }
 }

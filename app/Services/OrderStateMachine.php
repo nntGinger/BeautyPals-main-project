@@ -9,6 +9,12 @@ use Illuminate\Support\Facades\DB;
 
 final class OrderStateMachine
 {
+    /** @return array<OrderStatus> */
+    public function allowedTransitionsFor(OrderStatus|string $status): array
+    {
+        return $this->allowedTransitions(is_string($status) ? OrderStatus::from($status) : $status);
+    }
+
     /**
      * Return all allowed next statuses.
      *
