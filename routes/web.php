@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
 use App\Http\Controllers\IngredientLookupController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
+use App\Http\Controllers\Vendor\OrderController as VendorOrderController;
 use App\Http\Controllers\Vendor\PendingController as VendorPendingController;
 use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\RegistrationController as VendorRegistrationController;
@@ -50,6 +51,8 @@ Route::middleware(['auth', 'role:vendor'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:vendor', 'vendor.approved'])->prefix('vendor')->name('vendor.')->group(function () {
+    Route::post('/orders/{vendorOrder}/transition', [VendorOrderController::class, 'transition'])
+        ->whereNumber('vendorOrder')->name('orders.transition');
     Route::get('/', VendorDashboardController::class)->name('dashboard');
     Route::get('/dashboard', VendorDashboardController::class);
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
