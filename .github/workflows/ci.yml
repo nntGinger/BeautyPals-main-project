@@ -1,0 +1,73 @@
+name: CI — Tests & Code Style
+
+on:
+  push:
+    branches: [ main, "feat/**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  tests-and-lint:
+    name: PHP 8.3 · Pint & PHPUnit (MySQL 8.0)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: laravel_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -psecret"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_mysql, pdo_sqlite, bcmath, gd, zip
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Check code style on Sprint 3 & changed files with Laravel Pint
+        run: |
+          BASE_REF="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
+          CHANGED_PHP=$(git diff --name-only --diff-filter=ACMRT "$BASE_REF" HEAD -- '*.php' || true)
+          if [ -n "$CHANGED_PHP" ]; then
+            ./vendor/bin/pint --test $CHANGED_PHP
+          else
+            ./vendor/bin/pint --test app/Services/PaymentService.php app/Http/Controllers/PaymentCallbackController.php app/Http/Controllers/Customer/PaymentSimulatorController.php tests/Feature/PaymentServiceTest.php
+          fi
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run database migration & seed verification + PHPUnit on MySQL 8.0
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: laravel_test
+          DB_USERNAME: root
+          DB_PASSWORD: secret
+        run: |
+          php artisan migrate:fresh --seed --force
+          DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=laravel_test DB_USERNAME=root DB_PASSWORD=secret php artisan test
+
+      - name: Run SQLite payment & core suites
+        run: php artisan test tests/Feature/PaymentServiceTest.php tests/Feature/AuthenticationTest.php tests/Feature/AuthorizationTest.php tests/Feature/CartServiceTest.php tests/Unit/CommissionServiceTest.php tests/Unit/OrderStateMachineTest.php
+

@@ -7,7 +7,9 @@ use App\Http\Controllers\Admin\VendorController as AdminVendorController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
+use App\Http\Controllers\Customer\PaymentSimulatorController;
 use App\Http\Controllers\IngredientLookupController;
+use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
 use App\Http\Controllers\Vendor\PendingController as VendorPendingController;
 use App\Http\Controllers\Vendor\ProductController;
@@ -38,9 +40,20 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::get('/ingredients/lookup', IngredientLookupController::class)
     ->middleware(['auth', 'role:admin,vendor'])->name('ingredients.lookup');
 
+Route::post('/payments/callback', PaymentCallbackController::class)
+    ->middleware('throttle:60,1')
+    ->name('payments.callback');
+
 Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/', CustomerDashboardController::class)->name('dashboard');
     Route::get('/dashboard', CustomerDashboardController::class);
+    Route::get('/payments/simulator', [PaymentSimulatorController::class, 'index'])->name('payments.simulator');
+    Route::post('/payments/orders/{order}/initiate', [PaymentSimulatorController::class, 'initiate'])
+        ->whereNumber('order')->name('payments.initiate');
+    Route::get('/payments/{payment}/gateway', [PaymentSimulatorController::class, 'gateway'])
+        ->whereNumber('payment')->name('payments.gateway');
+    Route::post('/payments/{payment}/simulate', [PaymentSimulatorController::class, 'simulate'])
+        ->whereNumber('payment')->name('payments.simulate');
 });
 
 Route::middleware(['auth', 'role:vendor'])->group(function () {
