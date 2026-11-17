@@ -6,6 +6,9 @@ use App\Http\Controllers\Admin\ProductModerationController;
 use App\Http\Controllers\Admin\VendorController as AdminVendorController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Customer\CartController;
+use App\Http\Controllers\Customer\CheckoutController;
+use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
 use App\Http\Controllers\IngredientLookupController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
@@ -38,9 +41,73 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::get('/ingredients/lookup', IngredientLookupController::class)
     ->middleware(['auth', 'role:admin,vendor'])->name('ingredients.lookup');
 
-Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
-    Route::get('/', CustomerDashboardController::class)->name('dashboard');
-    Route::get('/dashboard', CustomerDashboardController::class);
+
+Route::middleware(['auth', 'role:customer'])
+    ->prefix('customer')
+    ->name('customer.')
+    ->group(function () {
+
+        // Customer Dashboard
+        Route::get('/', CustomerDashboardController::class)
+            ->name('dashboard');
+
+        Route::get('/dashboard', CustomerDashboardController::class);
+
+
+        // ==========================================
+        // S3-12: CUSTOMER CART
+        // ==========================================
+
+        // Display cart
+        Route::get('/cart', [CartController::class, 'index'])
+            ->name('cart.index');
+
+        // Add product to cart
+        Route::post('/cart/items', [CartController::class, 'store'])
+            ->name('cart.store');
+
+        // Update cart item quantity
+        Route::put('/cart/items/{skuId}', [CartController::class, 'update'])
+            ->whereNumber('skuId')
+            ->name('cart.update');
+
+        // Remove cart item
+        Route::delete('/cart/items/{skuId}', [CartController::class, 'destroy'])
+            ->whereNumber('skuId')
+            ->name('cart.destroy');
+
+
+        // ==========================================
+        // S3-12: COD CHECKOUT
+        // ==========================================
+
+        // Display checkout page
+        Route::get('/checkout', [CheckoutController::class, 'index'])
+            ->name('checkout.index');
+
+        // Submit COD order
+        Route::post('/checkout', [CheckoutController::class, 'store'])
+            ->name('checkout.store');
+
+
+        // ==========================================
+        // S3-13: CUSTOMER ORDERS
+        // ==========================================
+
+        // Display order history
+        Route::get('/orders', [OrderController::class, 'index'])
+            ->name('orders.index');
+
+        // Display order details
+        Route::get('/orders/{order}', [OrderController::class, 'show'])
+            ->whereNumber('order')
+            ->name('orders.show');
+
+        // Cancel pending order
+        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])
+            ->whereNumber('order')
+            ->name('orders.cancel');
+
 });
 
 Route::middleware(['auth', 'role:vendor'])->group(function () {
