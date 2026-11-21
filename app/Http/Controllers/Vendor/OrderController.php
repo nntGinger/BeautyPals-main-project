@@ -51,9 +51,24 @@ class OrderController extends Controller
         try {
             $service->transition($vendorOrder, $validated['status'], $request->user(), $validated['reason'] ?? null);
         } catch (InvalidTransitionException) {
-            throw ValidationException::withMessages(['status' => 'Không thể chuyển sang trạng thái này. Đơn có thể đã được xử lý, vui lòng tải lại trang.']);
+            throw ValidationException::withMessages([
+                'status' => 'Không thể chuyển sang trạng thái này. Đơn có thể đã được xử lý, vui lòng tải lại trang.',
+            ]);
+        } catch (ValidationException $exception) {
+            if (array_key_exists('status', $exception->errors())) {
+                throw ValidationException::withMessages([
+                    'status' => 'Không thể cập nhật tồn kho. Vui lòng kiểm tra phân bổ lô hàng trước khi thử lại.',
+                ]);
+            }
+
+            throw $exception;
         }
 
-        return to_route('vendor.orders.show', $vendorOrder)->with('success', 'Đã cập nhật trạng thái đơn hàng.');
+        $redirect = ($request->headers->has('referer')
+            || ($request->hasSession() && $request->session()->previousUrl() !== null))
+            ? back()
+            : to_route('vendor.orders.show', $vendorOrder);
+
+        return $redirect->with('success', 'Đã cập nhật trạng thái đơn hàng.');
     }
 }

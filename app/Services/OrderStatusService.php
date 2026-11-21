@@ -3,43 +3,57 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Exceptions\InvalidTransitionException;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\VendorOrder;
+use App\Services\Inventory\InventoryException;
 use App\Services\Inventory\InventoryService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class OrderStatusService
 {
     public function __construct(
-        private OrderStateMachine $stateMachine,
-        private InventoryService $inventoryService,
+        private readonly OrderStateMachine $stateMachine,
+        private readonly InventoryService $inventoryService,
     ) {}
 
-    public function transition(VendorOrder $vendorOrder, OrderStatus|string $targetStatus, User $actor, ?string $reason = null): VendorOrder
-    {
-        Gate::forUser($actor)->authorize('updateStatus', $vendorOrder);
-        $target = is_string($targetStatus) ? OrderStatus::from($targetStatus) : $targetStatus;
-        $reason = $reason === null ? null : trim($reason);
+    public function transition(
+        VendorOrder $vendorOrder,
+        OrderStatus|string $targetStatus,
+        User $actor,
+        ?string $reason = null,
+    ): VendorOrder {
+        return DB::transaction(function () use ($vendorOrder, $targetStatus, $actor, $reason): VendorOrder {
+            $target = is_string($targetStatus) ? OrderStatus::from($targetStatus) : $targetStatus;
+            $trimmedReason = $reason === null ? null : trim($reason);
 
-        if (($target === OrderStatus::REJECTED && ($reason === null || $reason === '')) || mb_strlen($reason ?? '') > 255) {
-            throw ValidationException::withMessages(['reason' => 'Vui lòng nhập lý do, tối đa 255 ký tự.']);
-        }
-
-        return DB::transaction(function () use ($vendorOrder, $target, $actor, $reason): VendorOrder {
-            // Lock the parent first to serialize updates from different vendors.
+            // Lock the parent first, consistently with customer cancellation and auto-completion.
             $order = Order::query()->lockForUpdate()->findOrFail($vendorOrder->order_id);
+            $locked = $order->vendorOrders()->lockForUpdate()->findOrFail($vendorOrder->id);
             $updated = $this->stateMachine->transition(
-                $vendorOrder->id, $target, $actor->id, $reason,
-                $target === OrderStatus::CANCELLED ? $reason : null,
+                $locked->id,
+                $target,
+                $actor->id,
+                $trimmedReason,
+                $target === OrderStatus::CANCELLED ? $trimmedReason : null,
             );
 
-            if ($target === OrderStatus::SHIPPED) {
-                $this->inventoryService->commitForVendorOrder($updated, $actor->id);
-            } elseif (in_array($target, [OrderStatus::CANCELLED, OrderStatus::REJECTED], true)) {
-                $this->inventoryService->releaseForVendorOrder($updated, $actor->id);
+            if (($target === OrderStatus::REJECTED && ($trimmedReason === null || $trimmedReason === ''))
+                || mb_strlen($trimmedReason ?? '') > 255) {
+                throw ValidationException::withMessages(['reason' => 'Vui lòng nhập lý do, tối đa 255 ký tự.']);
+            }
+
+            try {
+                if ($target === OrderStatus::SHIPPED) {
+                    $this->inventoryService->commitForVendorOrder($updated, $actor->id);
+                } elseif (in_array($target, [OrderStatus::CANCELLED, OrderStatus::REJECTED], true)) {
+                    $this->inventoryService->releaseForVendorOrder($updated, $actor->id);
+                }
+            } catch (InventoryException $exception) {
+                throw ValidationException::withMessages(['status' => $exception->getMessage()]);
             }
 
             $this->deriveParentStatus($order);
@@ -48,18 +62,47 @@ class OrderStatusService
         }, 3);
     }
 
-    private function deriveParentStatus(Order $order): void
+    public function cancelByCustomer(Order $order, User $customer, string $reason): void
     {
-        $statuses = $order->vendorOrders()->pluck('status');
-        $closed = [OrderStatus::CANCELLED->value, OrderStatus::REJECTED->value];
+        DB::transaction(function () use ($order, $customer, $reason): void {
+            $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
 
-        $status = match (true) {
-            $statuses->every(fn ($status) => in_array($status, $closed, true)) => 'cancelled',
-            $statuses->every(fn ($status) => $status === 'pending') => 'pending',
-            $statuses->contains('completed') && $statuses->every(fn ($status) => in_array($status, [...$closed, 'completed'], true)) => 'completed',
-            default => 'processing',
-        };
+            if ($locked->customer_id !== $customer->id) {
+                throw new AuthorizationException;
+            }
 
-        $order->update(['status' => $status]);
+            $vendorOrders = $locked->vendorOrders()->orderBy('id')->lockForUpdate()->get();
+
+            foreach ($vendorOrders as $vendorOrder) {
+                if ($vendorOrder->status !== OrderStatus::PENDING->value) {
+                    throw new InvalidTransitionException(OrderStatus::from($vendorOrder->status), OrderStatus::CANCELLED);
+                }
+            }
+
+            foreach ($vendorOrders as $vendorOrder) {
+                $this->transition($vendorOrder, OrderStatus::CANCELLED, $customer, $reason);
+            }
+        });
+    }
+
+    public function deriveParentStatus(Order $order): void
+    {
+        // Nested calls join the caller's transaction; standalone derivation also holds its locks until save.
+        DB::transaction(function () use ($order): void {
+            $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $statuses = $locked->vendorOrders()->orderBy('id')->lockForUpdate()->pluck('status');
+            $inactive = [OrderStatus::CANCELLED->value, OrderStatus::REJECTED->value];
+
+            $locked->status = match (true) {
+                $statuses->every(fn (string $status): bool => in_array($status, $inactive, true)) => 'cancelled',
+                $statuses->every(fn (string $status): bool => $status === OrderStatus::PENDING->value) => 'pending',
+                $statuses->contains(OrderStatus::COMPLETED->value)
+                    && $statuses->every(fn (string $status): bool => in_array($status, [...$inactive, OrderStatus::COMPLETED->value], true)) => 'completed',
+                default => 'processing',
+            };
+
+            $locked->save();
+            $order->setRawAttributes($locked->getAttributes(), true);
+        });
     }
 }

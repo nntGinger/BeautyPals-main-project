@@ -9,3 +9,5 @@ Schedule::command('batches:expire')->daily()->timezone('Asia/Ho_Chi_Minh')->with
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Schedule::command('orders:complete')->daily();

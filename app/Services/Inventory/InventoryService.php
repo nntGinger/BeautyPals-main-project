@@ -39,7 +39,7 @@ class InventoryService
                 $allocation->status = 'committed';
                 $allocation->save();
 
-                $this->logMovement($allocation, 'commit', -$quantity, $actorUserId);
+                $this->logMovement($vendorOrder->id, $allocation, 'commit', -$quantity, $actorUserId);
             }
         }, 3);
     }
@@ -65,7 +65,7 @@ class InventoryService
                 $allocation->status = 'released';
                 $allocation->save();
 
-                $this->logMovement($allocation, 'release', $quantity, $actorUserId);
+                $this->logMovement($vendorOrder->id, $allocation, 'release', $quantity, $actorUserId);
             }
         }, 3);
     }
@@ -136,6 +136,7 @@ class InventoryService
     }
 
     private function logMovement(
+        int $vendorOrderId,
         OrderItemAllocation $allocation,
         string $type,
         int $quantityDelta,
@@ -146,8 +147,8 @@ class InventoryService
             'type' => $type,
             // The BeautyPals migration uses a signed 'qty' column.
             'qty' => $quantityDelta,
-            'ref_type' => 'order_item_allocation',
-            'ref_id' => $allocation->id,
+            'ref_type' => 'vendor_order',
+            'ref_id' => $vendorOrderId,
             'created_by' => $actorUserId,
         ]);
     }
