@@ -98,6 +98,8 @@
                 <a href="{{ auth()->user()->homePath() }}">Khu vực của tôi</a>
                 @if (auth()->user()->isApprovedVendor())
                     <a href="{{ route('vendor.products.index') }}" @if (request()->routeIs('vendor.products.*')) aria-current="page" @endif>Sản phẩm của tôi</a>
+                    <a href="{{ route('vendor.orders.index') }}" @if (request()->routeIs('vendor.orders.*')) aria-current="page" @endif>Đơn hàng</a>
+                    <a href="{{ route('vendor.inventory.index') }}" @if (request()->routeIs('vendor.inventory.*')) aria-current="page" @endif>Tồn kho</a>
                 @endif
                 @if (auth()->user()->isAdmin())
                     <a href="{{ route('admin.products.index') }}" @if (request()->routeIs('admin.products.*')) aria-current="page" @endif>Duyệt sản phẩm</a>

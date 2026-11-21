@@ -9,6 +9,8 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
 use App\Http\Controllers\IngredientLookupController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
+use App\Http\Controllers\Vendor\InventoryController;
+use App\Http\Controllers\Vendor\OrderController as VendorOrderController;
 use App\Http\Controllers\Vendor\PendingController as VendorPendingController;
 use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\RegistrationController as VendorRegistrationController;
@@ -52,6 +54,12 @@ Route::middleware(['auth', 'role:vendor'])->group(function () {
 Route::middleware(['auth', 'role:vendor', 'vendor.approved'])->prefix('vendor')->name('vendor.')->group(function () {
     Route::get('/', VendorDashboardController::class)->name('dashboard');
     Route::get('/dashboard', VendorDashboardController::class);
+    Route::get('/orders', [VendorOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{vendorOrder}', [VendorOrderController::class, 'show'])->whereNumber('vendorOrder')->name('orders.show');
+    Route::post('/orders/{vendorOrder}/transition', [VendorOrderController::class, 'transition'])->whereNumber('vendorOrder')->name('orders.transition');
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/inventory/{batch}', [InventoryController::class, 'show'])->whereNumber('batch')->name('inventory.show');
+    Route::post('/inventory/{batch}/adjust', [InventoryController::class, 'adjust'])->whereNumber('batch')->name('inventory.adjust');
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
