@@ -10,7 +10,9 @@ use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\CheckoutController;
 use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
+use App\Http\Controllers\Customer\PaymentSimulatorController;
 use App\Http\Controllers\IngredientLookupController;
+use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
 use App\Http\Controllers\Vendor\InventoryController;
 use App\Http\Controllers\Vendor\OrderController as VendorOrderController;
@@ -43,74 +45,41 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::get('/ingredients/lookup', IngredientLookupController::class)
     ->middleware(['auth', 'role:admin,vendor'])->name('ingredients.lookup');
 
+Route::post('/payments/callback', PaymentCallbackController::class)
+    ->middleware('throttle:60,1')
+    ->name('payments.callback');
 
 Route::middleware(['auth', 'role:customer'])
     ->prefix('customer')
     ->name('customer.')
     ->group(function () {
-
-        // Customer Dashboard
-        Route::get('/', CustomerDashboardController::class)
-            ->name('dashboard');
-
+        Route::get('/', CustomerDashboardController::class)->name('dashboard');
         Route::get('/dashboard', CustomerDashboardController::class);
 
+        // S3-12: Customer Cart
+        Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+        Route::post('/cart/items', [CartController::class, 'store'])->name('cart.store');
+        Route::put('/cart/items/{skuId}', [CartController::class, 'update'])->whereNumber('skuId')->name('cart.update');
+        Route::delete('/cart/items/{skuId}', [CartController::class, 'destroy'])->whereNumber('skuId')->name('cart.destroy');
 
-        // ==========================================
-        // S3-12: CUSTOMER CART
-        // ==========================================
+        // S3-12: COD Checkout
+        Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+        Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
-        // Display cart
-        Route::get('/cart', [CartController::class, 'index'])
-            ->name('cart.index');
+        // S3-13: Customer Orders
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->whereNumber('order')->name('orders.show');
+        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->whereNumber('order')->name('orders.cancel');
 
-        // Add product to cart
-        Route::post('/cart/items', [CartController::class, 'store'])
-            ->name('cart.store');
-
-        // Update cart item quantity
-        Route::put('/cart/items/{skuId}', [CartController::class, 'update'])
-            ->whereNumber('skuId')
-            ->name('cart.update');
-
-        // Remove cart item
-        Route::delete('/cart/items/{skuId}', [CartController::class, 'destroy'])
-            ->whereNumber('skuId')
-            ->name('cart.destroy');
-
-
-        // ==========================================
-        // S3-12: COD CHECKOUT
-        // ==========================================
-
-        // Display checkout page
-        Route::get('/checkout', [CheckoutController::class, 'index'])
-            ->name('checkout.index');
-
-        // Submit COD order
-        Route::post('/checkout', [CheckoutController::class, 'store'])
-            ->name('checkout.store');
-
-
-        // ==========================================
-        // S3-13: CUSTOMER ORDERS
-        // ==========================================
-
-        // Display order history
-        Route::get('/orders', [OrderController::class, 'index'])
-            ->name('orders.index');
-
-        // Display order details
-        Route::get('/orders/{order}', [OrderController::class, 'show'])
-            ->whereNumber('order')
-            ->name('orders.show');
-
-        // Cancel pending order
-        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])
-            ->whereNumber('order')
-            ->name('orders.cancel');
-
-});
+        // S3-01: Simulated Payment Gateway
+        Route::get('/payments/simulator', [PaymentSimulatorController::class, 'index'])->name('payments.simulator');
+        Route::post('/payments/orders/{order}/initiate', [PaymentSimulatorController::class, 'initiate'])
+            ->whereNumber('order')->name('payments.initiate');
+        Route::get('/payments/{payment}/gateway', [PaymentSimulatorController::class, 'gateway'])
+            ->whereNumber('payment')->name('payments.gateway');
+        Route::post('/payments/{payment}/simulate', [PaymentSimulatorController::class, 'simulate'])
+            ->whereNumber('payment')->name('payments.simulate');
+    });
 
 Route::middleware(['auth', 'role:vendor'])->group(function () {
     Route::get('/vendor/pending', VendorPendingController::class)->name('vendor.pending');

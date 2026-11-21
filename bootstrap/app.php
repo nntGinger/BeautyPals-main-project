@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [EnsureAccountActive::class]);
+        $middleware->validateCsrfTokens(except: [
+            'payments/callback',
+        ]);
         $middleware->alias([
             'role' => EnsureUserRole::class,
             'vendor.approved' => EnsureVendorApproved::class,

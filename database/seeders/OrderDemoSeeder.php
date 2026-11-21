@@ -288,6 +288,65 @@ class OrderDemoSeeder extends Seeder
                 'commission_amount' => 61000,
             ],
         );
+
+        // ---------------------------------------------------------------------
+        // Order 4: Pending Online Payment Order (Customer 1 - for S3-01 Payment Simulation)
+        // ---------------------------------------------------------------------
+        $order4 = Order::query()->firstOrCreate(
+            ['order_code' => 'ORD-2026-1004'],
+            [
+                'customer_id' => $customer1->id,
+                'receiver' => 'Customer Demo',
+                'phone' => '0900000002',
+                'address_text' => '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+                'subtotal' => 450000,
+                'shipping_total' => 0,
+                'discount_total' => 0,
+                'grand_total' => 450000,
+                'payment_method' => 'vnpay',
+                'payment_status' => 'pending',
+                'status' => 'pending',
+                'idempotency_key' => (string) Str::uuid(),
+                'placed_at' => now()->subMinutes(30),
+            ],
+        );
+
+        Payment::query()->firstOrCreate(
+            ['txn_ref' => 'VNPAY-2026-1004'],
+            [
+                'order_id' => $order4->id,
+                'method' => 'vnpay',
+                'amount' => 450000,
+                'status' => 'pending',
+                'paid_at' => null,
+            ],
+        );
+
+        $vo4 = VendorOrder::query()->firstOrCreate(
+            ['order_id' => $order4->id, 'vendor_id' => $vendor1->id],
+            [
+                'vo_code' => 'VO-2026-1004-A',
+                'status' => 'pending',
+                'subtotal' => 450000,
+                'shipping_fee' => 0,
+                'discount' => 0,
+                'total' => 450000,
+                'commission_amount' => 45000,
+            ],
+        );
+
+        OrderItem::query()->firstOrCreate(
+            ['vendor_order_id' => $vo4->id, 'sku_id' => $sku1->id],
+            [
+                'product_name' => 'Kem Dưỡng Ẩm Trà Xanh Innisfree Green Tea Seed Hyaluronic Cream',
+                'sku_code' => $sku1->sku_code,
+                'unit_price' => 450000,
+                'qty' => 1,
+                'line_total' => 450000,
+                'commission_rate' => '10.00',
+                'commission_amount' => 45000,
+            ],
+        );
     }
 
     private function createStatusHistory(int $voId, array $history): void

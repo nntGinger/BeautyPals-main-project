@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'payment_gateway' => [
+        'secret' => env('PAYMENT_GATEWAY_SECRET', env('APP_KEY', 'beautypals-mock-gateway-secret')),
+        'signature_ttl_seconds' => (int) env('PAYMENT_GATEWAY_SIGNATURE_TTL', 900),
+    ],
+
 ];
