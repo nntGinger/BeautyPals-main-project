@@ -96,6 +96,10 @@
                     <a href="{{ route('admin.vendors.index') }}">Quản lý Vendor</a>
                 @endif
                 <a href="{{ auth()->user()->homePath() }}">Khu vực của tôi</a>
+                @if (auth()->user()->isCustomer())
+                    <a href="{{ route('customer.cart.index') }}" @if (request()->routeIs('customer.cart.*')) aria-current="page" @endif>Giỏ hàng</a>
+                    <a href="{{ route('customer.orders.index') }}" @if (request()->routeIs('customer.orders.*')) aria-current="page" @endif>Đơn hàng</a>
+                @endif
                 @if (auth()->user()->isApprovedVendor())
                     <a href="{{ route('vendor.products.index') }}" @if (request()->routeIs('vendor.products.*')) aria-current="page" @endif>Sản phẩm của tôi</a>
                     <a href="{{ route('vendor.orders.index') }}" @if (request()->routeIs('vendor.orders.*')) aria-current="page" @endif>Đơn hàng</a>

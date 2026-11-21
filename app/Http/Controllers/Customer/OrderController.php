@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Exceptions\InvalidTransitionException;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\OrderStatusService;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -45,7 +46,7 @@ class OrderController extends Controller
             'vendorOrders.vendor',
             'vendorOrders.items',
             'vendorOrders.statusHistories' => function (
-                Builder $query
+                HasMany $query
             ): void {
                 $query
                     ->orderBy('created_at')
@@ -74,11 +75,26 @@ class OrderController extends Controller
     ): RedirectResponse {
         Gate::authorize('cancel', $order);
 
-        $orderStatusService->cancelByCustomer(
-            $order,
-            $request->user(),
-            'Khách hàng yêu cầu hủy đơn.'
-        );
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $reason = trim((string) ($validated['reason'] ?? ''));
+        if ($reason === '') {
+            $reason = 'Khách hàng yêu cầu hủy đơn.';
+        }
+
+        try {
+            $orderStatusService->cancelByCustomer(
+                $order,
+                $request->user(),
+                $reason
+            );
+        } catch (InvalidTransitionException) {
+            return redirect()
+                ->route('customer.orders.show', $order)
+                ->with('error', 'Đơn hàng không thể hủy vì cửa hàng đã bắt đầu xử lý.');
+        }
 
         return redirect()
             ->route('customer.orders.show', $order)

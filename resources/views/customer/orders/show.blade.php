@@ -578,11 +578,42 @@
     </section>
 
     @if ($canCancel)
-        <div class="bp-detail__notice">
-            Đơn hàng hiện đáp ứng điều kiện trạng thái để yêu cầu hủy.
-            Chức năng hủy sẽ được kích hoạt sau khi tích hợp xử lý hủy
-            đơn và hoàn tồn kho an toàn.
-        </div>
+        <section class="bp-detail__panel">
+            <h2>Hủy đơn hàng</h2>
+
+            <form method="POST" action="{{ route('customer.orders.cancel', $order) }}" class="bp-detail__cancel-panel">
+                @csrf
+
+                <div style="flex: 1; min-width: 240px;">
+                    <p class="bp-detail__cancel-description">
+                        Tất cả đơn con đang ở trạng thái chờ xác nhận. Hủy đơn sẽ hoàn trả toàn bộ tồn kho đang giữ chỗ.
+                    </p>
+                    <label for="cancel-reason" style="display:block; margin-top:10px; font-size:13px; color:#6d5b64;">
+                        Lý do hủy (tùy chọn)
+                    </label>
+                    <input
+                        id="cancel-reason"
+                        type="text"
+                        name="reason"
+                        maxlength="255"
+                        value="{{ old('reason') }}"
+                        placeholder="Ví dụ: Đổi sản phẩm khác hoặc cập nhật địa chỉ"
+                        style="width:100%; margin-top:6px; padding:10px 12px; border:1px solid #eadbe0; border-radius:10px;"
+                    >
+                    @error('reason')
+                        <p class="error" style="margin-top:6px;" role="alert">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <button
+                    type="submit"
+                    class="bp-detail__cancel-button"
+                    onclick="return confirm('Bạn chắc chắn muốn hủy toàn bộ đơn hàng này?')"
+                >
+                    Hủy đơn hàng
+                </button>
+            </form>
+        </section>
     @endif
 
 </div>

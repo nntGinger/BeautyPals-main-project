@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Exceptions\CartException;
-use App\Exceptions\InventoryException;
 use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\Inventory\InventoryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -82,17 +82,13 @@ class CheckoutController extends Controller
                 'uuid',
             ],
         ], [
-            'address_id.required' =>
-                'Vui lòng chọn địa chỉ nhận hàng.',
+            'address_id.required' => 'Vui lòng chọn địa chỉ nhận hàng.',
 
-            'address_id.exists' =>
-                'Địa chỉ nhận hàng không hợp lệ.',
+            'address_id.exists' => 'Địa chỉ nhận hàng không hợp lệ.',
 
-            'idempotency_key.required' =>
-                'Thiếu mã định danh giao dịch.',
+            'idempotency_key.required' => 'Thiếu mã định danh giao dịch.',
 
-            'idempotency_key.uuid' =>
-                'Mã định danh giao dịch không hợp lệ.',
+            'idempotency_key.uuid' => 'Mã định danh giao dịch không hợp lệ.',
         ]);
 
         // Do not place orders until backend dependencies
@@ -130,7 +126,7 @@ class CheckoutController extends Controller
             ->with(
                 'status',
                 'Đặt hàng COD thành công! Mã đơn hàng: '
-                . $order->order_code
+                .$order->order_code
             );
     }
 }

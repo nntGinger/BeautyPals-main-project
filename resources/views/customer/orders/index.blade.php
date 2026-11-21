@@ -416,7 +416,7 @@
             class="bp-orders__pagination"
             aria-label="Phân trang đơn hàng"
         >
-            {{ $orders->links() }}
+            {{ $orders->links('vendor.partials.pagination') }}
         </nav>
     @endif
 

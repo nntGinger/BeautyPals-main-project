@@ -104,4 +104,3 @@ class PaymentSimulatorController extends Controller
         return to_route('customer.payments.gateway', $payment)->with('success', $message);
     }
 }
-
