@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Batch;
+use App\Support\InventoryDate;
 use Illuminate\Console\Command;
 
 class ExpireBatchesCommand extends Command
@@ -14,7 +15,7 @@ class ExpireBatchesCommand extends Command
     public function handle(): int
     {
         $count = Batch::query()->where('status', 'active')
-            ->whereDate('exp_date', '<=', today('Asia/Ho_Chi_Minh')->toDateString())
+            ->whereDate('exp_date', '<=', InventoryDate::today())
             ->update(['status' => 'expired']);
 
         $this->info("Đã đánh dấu {$count} lô hết hạn.");

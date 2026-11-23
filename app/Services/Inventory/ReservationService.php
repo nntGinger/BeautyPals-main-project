@@ -7,7 +7,7 @@ use App\Models\OrderItem;
 use App\Models\OrderItemAllocation;
 use App\Models\Sku;
 use App\Models\StockMovement;
-use Illuminate\Support\Carbon;
+use App\Support\InventoryDate;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -57,7 +57,7 @@ class ReservationService
             $batches = Batch::query()
                 ->where('sku_id', $sku->getKey())
                 ->where('status', 'active')
-                ->whereDate('exp_date', '>', Carbon::today()->toDateString())
+                ->whereDate('exp_date', '>', InventoryDate::today())
                 ->whereRaw('qty_on_hand > qty_reserved')
                 ->orderBy('exp_date', 'asc')
                 ->orderBy('id', 'asc')
