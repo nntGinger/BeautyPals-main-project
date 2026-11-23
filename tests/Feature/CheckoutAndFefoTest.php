@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\Inventory\InventoryException;
 use App\Services\Inventory\InventoryService;
 use App\Services\OrderStatusService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -90,8 +91,22 @@ class CheckoutAndFefoTest extends TestCase
         ]);
         $this->assertDatabaseCount('cart_items', 0);
         $this->assertDatabaseCount('order_status_history', 3);
+        foreach ([[$sku1, 10000], [$sku2, 40000], [$sku3, 15000]] as [$sku, $commission]) {
+            $this->assertDatabaseHas('vendor_orders', [
+                'order_id' => $order->id,
+                'vendor_id' => $sku->product->vendor_id,
+                'commission_amount' => $commission,
+            ]);
+            $this->assertDatabaseHas('order_items', [
+                'sku_id' => $sku->id,
+                'commission_amount' => $commission,
+            ]);
+        }
+        $this->assertDatabaseCount('order_item_allocations', 3);
+        $this->assertDatabaseCount('stock_movements', 3);
+        $this->assertSame([1, 2, 1], Batch::query()->orderBy('id')->pluck('qty_reserved')->all());
 
-        // Re-submitting the same idempotency_key after adding something new does not create a second order.
+        // Re-submit the same key after checkout has cleared the cart.
         $this->post(route('customer.checkout.store'), [
             'address_id' => $address->id,
             'idempotency_key' => $idempotencyKey,
@@ -99,6 +114,11 @@ class CheckoutAndFefoTest extends TestCase
 
         $this->assertDatabaseCount('orders', 1);
         $this->assertDatabaseCount('vendor_orders', 3);
+        $this->assertDatabaseCount('order_items', 3);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('order_item_allocations', 3);
+        $this->assertDatabaseCount('stock_movements', 3);
+        $this->assertSame([1, 2, 1], Batch::query()->orderBy('id')->pluck('qty_reserved')->all());
     }
 
     public function test_fefo_allocates_100_and_50_from_batches_100_and_200_and_skips_expired_via_checkout(): void
@@ -149,6 +169,25 @@ class CheckoutAndFefoTest extends TestCase
         $this->assertSame(0, $expiredBatch->fresh()->qty_reserved);
         $this->assertSame(100, $nearBatch->fresh()->qty_reserved);
         $this->assertSame(50, $farBatch->fresh()->qty_reserved);
+
+        $item = $order->vendorOrders->sole()->items->sole();
+        $allocations = $item->allocations->keyBy('batch_id');
+        $this->assertDatabaseCount('order_item_allocations', 2);
+        $this->assertDatabaseCount('stock_movements', 2);
+
+        foreach ([[$nearBatch, 100], [$farBatch, 50]] as [$batch, $quantity]) {
+            $this->assertArrayHasKey($batch->id, $allocations->all());
+            $allocation = $allocations->get($batch->id);
+            $this->assertSame($quantity, $allocation->qty);
+            $this->assertSame('held', $allocation->status);
+            $this->assertDatabaseHas('stock_movements', [
+                'batch_id' => $batch->id,
+                'type' => 'reserve',
+                'qty' => -$quantity,
+                'ref_type' => 'order_item_allocation',
+                'ref_id' => $allocation->id,
+            ]);
+        }
     }
 
     public function test_oversell_when_stock_is_one_allows_first_checkout_and_returns_validation_error_for_second(): void
@@ -165,28 +204,46 @@ class CheckoutAndFefoTest extends TestCase
         $cartService->addItem($customer1->id, $sku->id, 1);
         $cartService->addItem($customer2->id, $sku->id, 1);
 
-        $this->actingAs($customer1)
-            ->post(route('customer.checkout.store'), [
-                'address_id' => $address1->id,
-                'idempotency_key' => (string) Str::uuid(),
-            ])
-            ->assertRedirect();
+        $checkoutService = app(CheckoutService::class);
+        $order = $checkoutService->place($customer1->id, $address1->id, (string) Str::uuid());
 
         $this->assertSame(1, $batch->fresh()->qty_reserved);
         $this->assertDatabaseCount('orders', 1);
+
+        $secondKey = (string) Str::uuid();
+        try {
+            $checkoutService->place($customer2->id, $address2->id, $secondKey);
+            $this->fail('The second checkout should throw InventoryException.');
+        } catch (InventoryException $exception) {
+            $this->assertStringContainsString($sku->sku_code, $exception->getMessage());
+        }
+        $this->assertDatabaseMissing('orders', ['idempotency_key' => $secondKey]);
 
         // Customer 2 must receive a validation error on 'cart' rather than a 500 error.
         $this->actingAs($customer2)
             ->from(route('customer.checkout.index'))
             ->post(route('customer.checkout.store'), [
                 'address_id' => $address2->id,
-                'idempotency_key' => (string) Str::uuid(),
+                'idempotency_key' => $secondKey,
             ])
             ->assertRedirect(route('customer.checkout.index'))
             ->assertSessionHasErrors('cart');
 
         $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'customer_id' => $customer1->id]);
+        $this->assertDatabaseCount('vendor_orders', 1);
+        $this->assertDatabaseCount('order_items', 1);
+        $this->assertDatabaseCount('order_item_allocations', 1);
+        $this->assertDatabaseCount('stock_movements', 1);
+        $this->assertDatabaseCount('order_status_history', 1);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseHas('cart_items', [
+            'cart_id' => $customer2->cart()->sole()->id,
+            'sku_id' => $sku->id,
+            'qty' => 1,
+        ]);
         $this->assertSame(1, $batch->fresh()->qty_reserved);
+        $this->assertSame(1, $batch->fresh()->qty_on_hand);
     }
 
     public function test_customer_order_ui_cancel_releases_stock_idempotently_and_prevents_cancel_after_confirm(): void
@@ -257,6 +314,78 @@ class CheckoutAndFefoTest extends TestCase
         $this->assertSame(0, $batch1->fresh()->qty_reserved);
         $this->assertSame(10, $batch2->fresh()->qty_on_hand);
         $this->assertSame(0, $batch2->fresh()->qty_reserved);
+    }
+
+    public function test_vendor_orders_release_and_commit_once_and_auto_complete_the_parent(): void
+    {
+        $customer = User::factory()->customer()->create();
+        $address = $this->createAddress($customer);
+        $cancelSku = $this->createSellableSku(110000, 10);
+        $shipSku = $this->createSellableSku(120000, 12);
+        $cancelBatch = Batch::query()->where('sku_id', $cancelSku->id)->sole();
+        $shipBatch = Batch::query()->where('sku_id', $shipSku->id)->sole();
+
+        $cartService = app(CartService::class);
+        $cartService->addItem($customer->id, $cancelSku->id, 4);
+        $cartService->addItem($customer->id, $shipSku->id, 5);
+        $order = app(CheckoutService::class)->place($customer->id, $address->id, (string) Str::uuid());
+        $cancelOrder = $order->vendorOrders()->where('vendor_id', $cancelSku->product->vendor_id)->sole();
+        $shipOrder = $order->vendorOrders()->where('vendor_id', $shipSku->product->vendor_id)->sole();
+        $cancelOwner = $cancelOrder->vendor->owner;
+        $shipOwner = $shipOrder->vendor->owner;
+        $orderStatusService = app(OrderStatusService::class);
+        $inventoryService = app(InventoryService::class);
+
+        $this->assertSame(4, $cancelBatch->fresh()->qty_reserved);
+        $this->assertSame(5, $shipBatch->fresh()->qty_reserved);
+
+        $orderStatusService->transition($cancelOrder, OrderStatus::CANCELLED, $cancelOwner, 'Cửa hàng hủy đơn');
+        $this->assertSame('cancelled', $cancelOrder->fresh()->status);
+        $this->assertSame('pending', $shipOrder->fresh()->status);
+        $this->assertSame('processing', $order->fresh()->status);
+        $this->assertSame(0, $cancelBatch->fresh()->qty_reserved);
+        $this->assertSame(5, $shipBatch->fresh()->qty_reserved);
+        $this->assertDatabaseHas('stock_movements', [
+            'batch_id' => $cancelBatch->id,
+            'type' => 'release',
+            'qty' => 4,
+        ]);
+
+        $inventoryService->releaseForVendorOrder($cancelOrder, $cancelOwner->id);
+        $this->assertSame(0, $cancelBatch->fresh()->qty_reserved);
+        $this->assertSame(10, $cancelBatch->fresh()->qty_on_hand);
+        $this->assertSame('released', $cancelBatch->allocations()->sole()->status);
+        $this->assertDatabaseCount('stock_movements', 3);
+
+        $orderStatusService->transition($shipOrder, OrderStatus::CONFIRMED, $shipOwner);
+        $orderStatusService->transition($shipOrder, OrderStatus::PACKED, $shipOwner);
+        $orderStatusService->transition($shipOrder, OrderStatus::SHIPPED, $shipOwner);
+        $this->assertSame('shipped', $shipOrder->fresh()->status);
+        $this->assertSame(7, $shipBatch->fresh()->qty_on_hand);
+        $this->assertSame(0, $shipBatch->fresh()->qty_reserved);
+        $this->assertDatabaseHas('stock_movements', [
+            'batch_id' => $shipBatch->id,
+            'type' => 'commit',
+            'qty' => -5,
+        ]);
+
+        $inventoryService->commitForVendorOrder($shipOrder, $shipOwner->id);
+        $this->assertSame(7, $shipBatch->fresh()->qty_on_hand);
+        $this->assertSame(0, $shipBatch->fresh()->qty_reserved);
+        $this->assertSame('committed', $shipBatch->allocations()->sole()->status);
+        $this->assertDatabaseCount('stock_movements', 4);
+
+        $orderStatusService->transition($shipOrder, OrderStatus::DELIVERED, $shipOwner);
+        $this->assertSame('processing', $order->fresh()->status);
+        $this->artisan('orders:complete')->assertExitCode(0);
+        $this->assertSame('delivered', $shipOrder->fresh()->status);
+
+        $shipOrder->update(['delivered_at' => now()->subDays(8)]);
+        $this->artisan('orders:complete')->assertExitCode(0);
+        $this->assertSame('completed', $shipOrder->fresh()->status);
+        $this->assertSame('completed', $order->fresh()->status);
+        $this->assertSame('cancelled', $cancelOrder->fresh()->status);
+        $this->assertDatabaseCount('stock_movements', 4);
     }
 
     public function test_cart_ui_operations_empty_checkout_redirect_and_customer_order_pagination(): void
@@ -354,4 +483,3 @@ class CheckoutAndFefoTest extends TestCase
         return $sku;
     }
 }
-
