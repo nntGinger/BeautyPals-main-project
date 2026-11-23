@@ -20,6 +20,7 @@ class Settlement extends Model
         'refund_total',
         'adjustment',
         'net_payout',
+        'net_payable',
         'status',
         'finalized_by',
         'paid_at',
@@ -35,6 +36,7 @@ class Settlement extends Model
             'refund_total' => 'integer',
             'adjustment' => 'integer',
             'net_payout' => 'integer',
+            'net_payable' => 'integer',
             'paid_at' => 'datetime',
         ];
     }
