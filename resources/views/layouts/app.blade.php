@@ -104,8 +104,13 @@
                     <a href="{{ route('vendor.products.index') }}" @if (request()->routeIs('vendor.products.*')) aria-current="page" @endif>Sản phẩm của tôi</a>
                     <a href="{{ route('vendor.orders.index') }}" @if (request()->routeIs('vendor.orders.*')) aria-current="page" @endif>Đơn hàng</a>
                     <a href="{{ route('vendor.inventory.index') }}" @if (request()->routeIs('vendor.inventory.*')) aria-current="page" @endif>Tồn kho</a>
+                    <a href="{{ route('vendor.settlements.index') }}" @if (request()->routeIs('vendor.settlements.*')) aria-current="page" @endif>Đối soát</a>
                 @endif
                 @if (auth()->user()->isAdmin())
+                    <a href="{{ route('admin.orders.index') }}" @if (request()->routeIs('admin.orders.*')) aria-current="page" @endif>Đơn hàng</a>
+                    <a href="{{ route('admin.users.index') }}" @if (request()->routeIs('admin.users.*')) aria-current="page" @endif>Tài khoản</a>
+                    <a href="{{ route('admin.settlements.index') }}" @if (request()->routeIs('admin.settlements.*')) aria-current="page" @endif>Đối soát</a>
+                    <a href="{{ route('admin.audit-logs.index') }}" @if (request()->routeIs('admin.audit-logs.*')) aria-current="page" @endif>Audit Log</a>
                     <a href="{{ route('admin.products.index') }}" @if (request()->routeIs('admin.products.*')) aria-current="page" @endif>Duyệt sản phẩm</a>
                     <a class="btn" href="{{ route('admin.ingredients.index') }}" @if (request()->routeIs('admin.ingredients.*')) aria-current="page" @endif>Quản lý thành phần</a>
                 @endif

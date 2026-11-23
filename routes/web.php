@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\IngredientController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductModerationController;
+use App\Http\Controllers\Admin\SettlementController as AdminSettlementController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VendorController as AdminVendorController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -19,6 +23,7 @@ use App\Http\Controllers\Vendor\OrderController as VendorOrderController;
 use App\Http\Controllers\Vendor\PendingController as VendorPendingController;
 use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\RegistrationController as VendorRegistrationController;
+use App\Http\Controllers\Vendor\SettlementController as VendorSettlementController;
 use App\Http\Controllers\Vendor\SubmitProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -104,6 +109,10 @@ Route::middleware(['auth', 'role:vendor', 'vendor.approved'])->prefix('vendor')-
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->whereNumber('product')->name('products.destroy');
     Route::post('/products/{product}/submit', SubmitProductController::class)->whereNumber('product')->name('products.submit');
     Route::get('/products/{product}', [ProductController::class, 'show'])->whereNumber('product')->name('products.show');
+
+    // S4-11: Vendor settlements
+    Route::get('/settlements', [VendorSettlementController::class, 'index'])->name('settlements.index');
+    Route::get('/settlements/{settlement}', [VendorSettlementController::class, 'show'])->whereNumber('settlement')->name('settlements.show');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -124,6 +133,22 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{vendor}/status', [AdminVendorController::class, 'updateStatus'])->name('status');
         Route::get('/{vendor}/license', [AdminVendorController::class, 'downloadLicense'])->name('license');
     });
+
+    // S4-02: Platform order monitoring & user lock/unlock
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{vendorOrder}', [AdminOrderController::class, 'show'])->whereNumber('vendorOrder')->name('orders.show');
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::post('/users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])
+        ->whereNumber('user')->name('users.toggle-status');
+
+    // S4-11: Settlements & Audit Log lookup
+    Route::get('/settlements', [AdminSettlementController::class, 'index'])->name('settlements.index');
+    Route::post('/settlements/generate', [AdminSettlementController::class, 'generate'])->name('settlements.generate');
+    Route::get('/settlements/{settlement}', [AdminSettlementController::class, 'show'])
+        ->whereNumber('settlement')->name('settlements.show');
+    Route::post('/settlements/{settlement}/pay', [AdminSettlementController::class, 'markPaid'])
+        ->whereNumber('settlement')->name('settlements.pay');
+    Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
 });
 
 // A-18 / UC04 public catalog API

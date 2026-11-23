@@ -10,6 +10,7 @@
         <div class="nav">
             <a class="btn" href="{{ route('vendor.orders.index') }}">Quản lý đơn hàng</a>
             <a class="btn btn-ghost" href="{{ route('vendor.inventory.index') }}">Quản lý tồn kho</a>
+            <a class="btn btn-ghost" href="{{ route('vendor.settlements.index') }}">Đối soát doanh thu</a>
         </div>
     </div>
 @endsection
