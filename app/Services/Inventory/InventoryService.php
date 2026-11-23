@@ -6,6 +6,7 @@ use App\Models\Batch;
 use App\Models\OrderItemAllocation;
 use App\Models\StockMovement;
 use App\Models\VendorOrder;
+use App\Support\InventoryDate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -103,6 +104,12 @@ class InventoryService
                 ->whereKey($batchId)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            // Reservation may predate expiry or quarantine. Revalidate under the
+            // batch lock before shipment; release must remain possible for any status.
+            if ($commit && ($batch->status !== 'active' || $batch->exp_date->toDateString() <= InventoryDate::today())) {
+                throw new InventoryException("Lô {$batch->batch_no} đã hết hạn hoặc bị chặn, không thể xuất kho.");
+            }
 
             $totalQuantity = 0;
 

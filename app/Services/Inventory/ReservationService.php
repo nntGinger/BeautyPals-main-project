@@ -57,7 +57,7 @@ class ReservationService
             $batches = Batch::query()
                 ->where('sku_id', $sku->getKey())
                 ->where('status', 'active')
-                ->whereDate('exp_date', '>', InventoryDate::today())
+                ->where('exp_date', '>=', InventoryDate::tomorrow())
                 ->whereRaw('qty_on_hand > qty_reserved')
                 ->orderBy('exp_date', 'asc')
                 ->orderBy('id', 'asc')

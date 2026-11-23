@@ -30,26 +30,32 @@ final class ProductSearchService
 {
     public function search(array $filters): LengthAwarePaginator
     {
-        $this->requireApplicationSchema();
-
-        $today = InventoryDate::today();
+        $minimumExpiry = InventoryDate::tomorrow();
+        $inStockOnly = ! empty($filters['in_stock']);
 
         // Aggregate qualifying SKUs before joining products: avoid duplicate rows
         // and avoid multiplying prices when several inventory batches exist.
         $offers = DB::table('skus as s')
             ->where('s.is_active', true)
             ->select('s.product_id')
-            ->selectRaw('MIN(s.price) AS min_price')
-            ->selectRaw(<<<'SQL'
+            ->selectRaw('MIN(s.price) AS min_price');
+
+        if ($inStockOnly) {
+            // The EXISTS below already excludes every out-of-stock SKU before
+            // MIN(price); do not run the same batch probe again in the projection.
+            $offers->selectRaw('1 AS in_stock');
+        } else {
+            $offers->selectRaw(<<<'SQL'
                 MAX(CASE WHEN EXISTS (
                     SELECT 1
                     FROM batches AS bt
                     WHERE bt.sku_id = s.id
                       AND bt.status = ?
-                      AND DATE(bt.exp_date) > ?
+                      AND bt.exp_date >= ?
                       AND bt.qty_on_hand > bt.qty_reserved
                 ) THEN 1 ELSE 0 END) AS in_stock
-                SQL, ['active', $today]);
+                SQL, ['active', $minimumExpiry]);
+        }
 
         // A qualifying price is an actual ACTIVE SKU's price; products has no
         // price column. Applying price constraints before grouping is essential.
@@ -62,13 +68,13 @@ final class ProductSearchService
 
         // In-stock-only means at least one of the matching-price SKUs has a
         // sellable batch. The displayed min_price then belongs to that SKU set.
-        if (! empty($filters['in_stock'])) {
-            $offers->whereExists(static function (Builder $stock) use ($today): void {
+        if ($inStockOnly) {
+            $offers->whereExists(static function (Builder $stock) use ($minimumExpiry): void {
                 $stock->selectRaw('1')
                     ->from('batches as bt')
                     ->whereColumn('bt.sku_id', 's.id')
                     ->where('bt.status', 'active')
-                    ->whereDate('bt.exp_date', '>', $today)
+                    ->where('bt.exp_date', '>=', $minimumExpiry)
                     ->whereColumn('bt.qty_on_hand', '>', 'bt.qty_reserved');
             });
         }
@@ -189,8 +195,8 @@ final class ProductSearchService
         return array_keys($visited);
     }
 
-    /** Fail closed if code is accidentally deployed against another schema. */
-    private function requireApplicationSchema(): void
+    /** Deployment check via catalog:check-schema; avoid metadata queries per listing. */
+    public function validateSchema(): void
     {
         $required = [
             'products' => ['id', 'vendor_id', 'brand_id', 'category_id', 'name', 'slug', 'description', 'status', 'created_at'],

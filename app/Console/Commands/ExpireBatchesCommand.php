@@ -15,7 +15,7 @@ class ExpireBatchesCommand extends Command
     public function handle(): int
     {
         $count = Batch::query()->where('status', 'active')
-            ->whereDate('exp_date', '<=', InventoryDate::today())
+            ->where('exp_date', '<', InventoryDate::tomorrow())
             ->update(['status' => 'expired']);
 
         $this->info("Đã đánh dấu {$count} lô hết hạn.");

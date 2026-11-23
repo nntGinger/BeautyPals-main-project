@@ -66,6 +66,7 @@ jobs:
           DB_PASSWORD: secret
         run: |
           php artisan migrate:fresh --seed --force
+          php artisan catalog:check-schema
           DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=laravel_test DB_USERNAME=root DB_PASSWORD=secret php artisan test
 
       - name: Run SQLite payment & core suites

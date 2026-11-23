@@ -294,10 +294,10 @@ final class CartService
         $available = (int) Batch::query()
             ->where('sku_id', $skuId)
             ->where('status', 'active')
-            ->whereDate(
+            ->where(
                 'exp_date',
-                '>',
-                InventoryDate::today()
+                '>=',
+                InventoryDate::tomorrow()
             )
             ->selectRaw(
                 'COALESCE(SUM(
