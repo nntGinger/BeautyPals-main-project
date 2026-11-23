@@ -78,4 +78,3 @@ class OrderController extends Controller
         return view('admin.orders.show', compact('vendorOrder'));
     }
 }
-

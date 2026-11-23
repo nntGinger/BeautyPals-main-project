@@ -95,4 +95,3 @@ class UserController extends Controller
             ->with('success', 'Đã cập nhật trạng thái tài khoản thành công.');
     }
 }
-

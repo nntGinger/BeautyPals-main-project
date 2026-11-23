@@ -32,4 +32,3 @@ class SettlementPolicy
         return $user->isAdmin();
     }
 }
-
