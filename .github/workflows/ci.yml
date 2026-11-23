@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests-and-lint:
-    name: PHP 8.3 · Pint & PHPUnit (MySQL 8.0)
+    name: PHP 8.4 · Pint & PHPUnit (MySQL 8.0)
     runs-on: ubuntu-latest
 
     services:
@@ -31,10 +31,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup PHP 8.3
+      - name: Setup PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, pdo, pdo_mysql, pdo_sqlite, bcmath, gd, zip
           coverage: none
 
