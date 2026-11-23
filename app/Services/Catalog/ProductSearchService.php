@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Catalog;
 
+use App\Support\InventoryDate;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ final class ProductSearchService
     {
         $this->requireApplicationSchema();
 
-        $today = now()->toDateString();
+        $today = InventoryDate::today();
 
         // Aggregate qualifying SKUs before joining products: avoid duplicate rows
         // and avoid multiplying prices when several inventory batches exist.
@@ -45,7 +46,7 @@ final class ProductSearchService
                     FROM batches AS bt
                     WHERE bt.sku_id = s.id
                       AND bt.status = ?
-                      AND bt.exp_date >= ?
+                      AND DATE(bt.exp_date) > ?
                       AND bt.qty_on_hand > bt.qty_reserved
                 ) THEN 1 ELSE 0 END) AS in_stock
                 SQL, ['active', $today]);
@@ -61,13 +62,13 @@ final class ProductSearchService
 
         // In-stock-only means at least one of the matching-price SKUs has a
         // sellable batch. The displayed min_price then belongs to that SKU set.
-        if (!empty($filters['in_stock'])) {
+        if (! empty($filters['in_stock'])) {
             $offers->whereExists(static function (Builder $stock) use ($today): void {
                 $stock->selectRaw('1')
                     ->from('batches as bt')
                     ->whereColumn('bt.sku_id', 's.id')
                     ->where('bt.status', 'active')
-                    ->whereDate('bt.exp_date', '>=', $today)
+                    ->whereDate('bt.exp_date', '>', $today)
                     ->whereColumn('bt.qty_on_hand', '>', 'bt.qty_reserved');
             });
         }
@@ -75,11 +76,13 @@ final class ProductSearchService
 
         $query = DB::table('products as p')
             ->join('vendors as v', 'v.id', '=', 'p.vendor_id')
+            ->join('users as vendor_owner', 'vendor_owner.id', '=', 'v.owner_user_id')
             ->join('categories as c', 'c.id', '=', 'p.category_id')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
             ->joinSub($offers, 'offer', 'offer.product_id', '=', 'p.id')
             ->where('p.status', 'approved')
             ->where('v.status', 'approved')
+            ->where('vendor_owner.status', 'active')
             ->select([
                 'p.id', 'p.name', 'p.slug', 'p.description',
                 'p.vendor_id', 'p.brand_id', 'p.category_id', 'p.created_at',
@@ -166,7 +169,7 @@ final class ProductSearchService
                 $children[(int) $category->parent_id][] = $id;
             }
         }
-        if (!$rootExists) {
+        if (! $rootExists) {
             return [];
         }
 
@@ -182,6 +185,7 @@ final class ProductSearchService
                 $pending[] = $child;
             }
         }
+
         return array_keys($visited);
     }
 
@@ -190,7 +194,8 @@ final class ProductSearchService
     {
         $required = [
             'products' => ['id', 'vendor_id', 'brand_id', 'category_id', 'name', 'slug', 'description', 'status', 'created_at'],
-            'vendors' => ['id', 'store_name', 'status'],
+            'vendors' => ['id', 'store_name', 'status', 'owner_user_id'],
+            'users' => ['id', 'status'],
             'brands' => ['id', 'name'],
             'categories' => ['id', 'parent_id', 'name'],
             'skus' => ['id', 'product_id', 'price', 'is_active'],
@@ -198,7 +203,7 @@ final class ProductSearchService
             'product_images' => ['id', 'product_id', 'path', 'sort'],
         ];
         foreach ($required as $table => $columns) {
-            if (!Schema::hasTable($table) || !Schema::hasColumns($table, $columns)) {
+            if (! Schema::hasTable($table) || ! Schema::hasColumns($table, $columns)) {
                 throw new LogicException("UC04 schema mismatch: {$table} missing required columns.");
             }
         }

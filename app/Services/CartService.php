@@ -7,6 +7,7 @@ use App\Models\Batch;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Sku;
+use App\Support\InventoryDate;
 use Illuminate\Support\Facades\DB;
 
 final class CartService
@@ -243,7 +244,7 @@ final class CartService
     private function findSellableSku(int $skuId): Sku
     {
         $sku = Sku::query()
-            ->with('product.vendor')
+            ->with('product.vendor.owner')
             ->find($skuId);
 
         if ($sku === null) {
@@ -270,6 +271,7 @@ final class CartService
         if (
             $vendor === null
             || $vendor->status !== 'approved'
+            || $vendor->owner?->isLocked()
         ) {
             throw CartException::vendorUnavailable(
                 (int) $product->vendor_id
@@ -294,8 +296,8 @@ final class CartService
             ->where('status', 'active')
             ->whereDate(
                 'exp_date',
-                '>=',
-                now()->toDateString()
+                '>',
+                InventoryDate::today()
             )
             ->selectRaw(
                 'COALESCE(SUM(
