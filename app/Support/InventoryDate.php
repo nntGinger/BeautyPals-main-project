@@ -10,4 +10,9 @@ final class InventoryDate
     {
         return Carbon::today('Asia/Ho_Chi_Minh')->toDateString();
     }
+
+    public static function tomorrow(): string
+    {
+        return Carbon::today('Asia/Ho_Chi_Minh')->addDay()->toDateString();
+    }
 }

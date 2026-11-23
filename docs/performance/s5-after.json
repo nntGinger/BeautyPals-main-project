@@ -1,0 +1,706 @@
+{
+    "phase": "after",
+    "mysql": "8.0.46",
+    "catalog_source_sha256": "b138b3538290a70baea0673ba8cc88cb52669619062b386b6fc14a210534794a",
+    "rows": {
+        "products": 6000,
+        "skus": 12000,
+        "batches": 48000,
+        "vendor_orders": 12000
+    },
+    "cases": {
+        "catalog_newest": {
+            "median_ms": 129.624,
+            "query_count": 2,
+            "result_sha256": "5bb7419d1f6f2e7ecc1630de79516b89462ff2754714c421d96fe1cf2198f5b8",
+            "total": 4800,
+            "plans": [
+                {
+                    "sql": "select count(*) as `aggregate` from `products` as `p` inner join `vendors` as `v` on `v`.`id` = `p`.`vendor_id` inner join `users` as `vendor_owner` on `vendor_owner`.`id` = `v`.`owner_user_id` inner join `categories` as `c` on `c`.`id` = `p`.`category_id` left join `brands` as `b` on `b`.`id` = `p`.`brand_id` inner join (select `s`.`product_id`, MIN(s.price) AS min_price, MAX(CASE WHEN EXISTS (\n    SELECT 1\n    FROM batches AS bt\n    WHERE bt.sku_id = s.id\n      AND bt.status = ?\n      AND bt.exp_date >= ?\n      AND bt.qty_on_hand > bt.qty_reserved\n) THEN 1 ELSE 0 END) AS in_stock from `skus` as `s` where `s`.`is_active` = ? group by `s`.`product_id`) as `offer` on `offer`.`product_id` = `p`.`id` where `p`.`status` = ? and `v`.`status` = ? and `vendor_owner`.`status` = ?",
+                    "bindings": [
+                        "active",
+                        "2026-11-24",
+                        true,
+                        "approved",
+                        "approved",
+                        "active"
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "c",
+                            "partitions": null,
+                            "type": "index",
+                            "possible_keys": "PRIMARY",
+                            "key": "idx_categories_parent",
+                            "key_len": "9",
+                            "ref": null,
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": "Using index"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "v",
+                            "partitions": null,
+                            "type": "ALL",
+                            "possible_keys": "PRIMARY,uq_vendors_owner,idx_vendors_status",
+                            "key": null,
+                            "key_len": null,
+                            "ref": null,
+                            "rows": 20,
+                            "filtered": 100,
+                            "Extra": "Using where; Using join buffer (hash join)"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "vendor_owner",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.v.owner_user_id",
+                            "rows": 1,
+                            "filtered": 10,
+                            "Extra": "Using where"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "p",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "PRIMARY,idx_products_vendor_status,idx_products_category_status,idx_products_status_newest",
+                            "key": "idx_products_vendor_status",
+                            "key_len": "90",
+                            "ref": "beautypals_s5_benchmark.v.id,const",
+                            "rows": 301,
+                            "filtered": 100,
+                            "Extra": "Using where"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "b",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.p.brand_id",
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": "Using index"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "<derived2>",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "<auto_key0>",
+                            "key": "<auto_key0>",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.p.id",
+                            "rows": 10,
+                            "filtered": 100,
+                            "Extra": null
+                        },
+                        {
+                            "id": 2,
+                            "select_type": "DERIVED",
+                            "table": "s",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "idx_skus_product_active,idx_skus_active_product_price",
+                            "key": "idx_skus_active_product_price",
+                            "key_len": "1",
+                            "ref": "const",
+                            "rows": 5916,
+                            "filtered": 100,
+                            "Extra": "Using index"
+                        },
+                        {
+                            "id": 3,
+                            "select_type": "DEPENDENT SUBQUERY",
+                            "table": "bt",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "uq_batches_sku_batch,idx_batches_fefo,idx_batches_status_expiry",
+                            "key": "idx_batches_fefo",
+                            "key_len": "90",
+                            "ref": "beautypals_s5_benchmark.s.id,const",
+                            "rows": 1,
+                            "filtered": 11.108888626098633,
+                            "Extra": "Using index condition; Using where"
+                        }
+                    ]
+                },
+                {
+                    "sql": "select `p`.`id`, `p`.`name`, `p`.`slug`, `p`.`description`, `p`.`vendor_id`, `p`.`brand_id`, `p`.`category_id`, `p`.`created_at`, `v`.`store_name` as `vendor_name`, `b`.`name` as `brand_name`, `c`.`name` as `category_name`, `offer`.`min_price` as `price`, `offer`.`in_stock`, (select `pi`.`path` from `product_images` as `pi` where `pi`.`product_id` = `p`.`id` order by `pi`.`sort` asc, `pi`.`id` asc limit 1) as `image_path` from `products` as `p` inner join `vendors` as `v` on `v`.`id` = `p`.`vendor_id` inner join `users` as `vendor_owner` on `vendor_owner`.`id` = `v`.`owner_user_id` inner join `categories` as `c` on `c`.`id` = `p`.`category_id` left join `brands` as `b` on `b`.`id` = `p`.`brand_id` inner join (select `s`.`product_id`, MIN(s.price) AS min_price, MAX(CASE WHEN EXISTS (\n    SELECT 1\n    FROM batches AS bt\n    WHERE bt.sku_id = s.id\n      AND bt.status = ?\n      AND bt.exp_date >= ?\n      AND bt.qty_on_hand > bt.qty_reserved\n) THEN 1 ELSE 0 END) AS in_stock from `skus` as `s` where `s`.`is_active` = ? group by `s`.`product_id`) as `offer` on `offer`.`product_id` = `p`.`id` where `p`.`status` = ? and `v`.`status` = ? and `vendor_owner`.`status` = ? order by `p`.`created_at` desc, `p`.`id` asc limit 12 offset 0",
+                    "bindings": [
+                        "active",
+                        "2026-11-24",
+                        true,
+                        "approved",
+                        "approved",
+                        "active"
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "c",
+                            "partitions": null,
+                            "type": "ALL",
+                            "possible_keys": "PRIMARY",
+                            "key": null,
+                            "key_len": null,
+                            "ref": null,
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": "Using temporary; Using filesort"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "v",
+                            "partitions": null,
+                            "type": "range",
+                            "possible_keys": "PRIMARY,uq_vendors_owner,idx_vendors_status",
+                            "key": "idx_vendors_status",
+                            "key_len": "82",
+                            "ref": null,
+                            "rows": 20,
+                            "filtered": 100,
+                            "Extra": "Using index condition; Using join buffer (hash join)"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "vendor_owner",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.v.owner_user_id",
+                            "rows": 1,
+                            "filtered": 10,
+                            "Extra": "Using where"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "<derived3>",
+                            "partitions": null,
+                            "type": "ALL",
+                            "possible_keys": null,
+                            "key": null,
+                            "key_len": null,
+                            "ref": null,
+                            "rows": 5916,
+                            "filtered": 100,
+                            "Extra": "Using join buffer (hash join)"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "p",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY,idx_products_vendor_status,idx_products_category_status,idx_products_status_newest",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "offer.product_id",
+                            "rows": 1,
+                            "filtered": 5,
+                            "Extra": "Using where"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "b",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.p.brand_id",
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": null
+                        },
+                        {
+                            "id": 3,
+                            "select_type": "DERIVED",
+                            "table": "s",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "idx_skus_product_active,idx_skus_active_product_price",
+                            "key": "idx_skus_active_product_price",
+                            "key_len": "1",
+                            "ref": "const",
+                            "rows": 5916,
+                            "filtered": 100,
+                            "Extra": "Using index"
+                        },
+                        {
+                            "id": 4,
+                            "select_type": "DEPENDENT SUBQUERY",
+                            "table": "bt",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "uq_batches_sku_batch,idx_batches_fefo,idx_batches_status_expiry",
+                            "key": "idx_batches_fefo",
+                            "key_len": "90",
+                            "ref": "beautypals_s5_benchmark.s.id,const",
+                            "rows": 1,
+                            "filtered": 11.108888626098633,
+                            "Extra": "Using index condition; Using where"
+                        },
+                        {
+                            "id": 2,
+                            "select_type": "DEPENDENT SUBQUERY",
+                            "table": "pi",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "idx_product_images_product_sort",
+                            "key": "idx_product_images_product_sort",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.p.id",
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": "Using filesort"
+                        }
+                    ]
+                }
+            ]
+        },
+        "catalog_stock_price": {
+            "median_ms": 99.151,
+            "query_count": 2,
+            "result_sha256": "5bb7419d1f6f2e7ecc1630de79516b89462ff2754714c421d96fe1cf2198f5b8",
+            "total": 3600,
+            "plans": [
+                {
+                    "sql": "select count(*) as `aggregate` from `products` as `p` inner join `vendors` as `v` on `v`.`id` = `p`.`vendor_id` inner join `users` as `vendor_owner` on `vendor_owner`.`id` = `v`.`owner_user_id` inner join `categories` as `c` on `c`.`id` = `p`.`category_id` left join `brands` as `b` on `b`.`id` = `p`.`brand_id` inner join (select `s`.`product_id`, MIN(s.price) AS min_price, 1 AS in_stock from `skus` as `s` where `s`.`is_active` = ? and `s`.`price` >= ? and `s`.`price` <= ? and exists (select 1 from `batches` as `bt` where `bt`.`sku_id` = `s`.`id` and `bt`.`status` = ? and `bt`.`exp_date` >= ? and `bt`.`qty_on_hand` > `bt`.`qty_reserved`) group by `s`.`product_id`) as `offer` on `offer`.`product_id` = `p`.`id` where `p`.`status` = ? and `v`.`status` = ? and `vendor_owner`.`status` = ?",
+                    "bindings": [
+                        true,
+                        100000,
+                        400000,
+                        "active",
+                        "2026-11-24",
+                        "approved",
+                        "approved",
+                        "active"
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "c",
+                            "partitions": null,
+                            "type": "index",
+                            "possible_keys": "PRIMARY",
+                            "key": "idx_categories_parent",
+                            "key_len": "9",
+                            "ref": null,
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": "Using index"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "v",
+                            "partitions": null,
+                            "type": "ALL",
+                            "possible_keys": "PRIMARY,uq_vendors_owner,idx_vendors_status",
+                            "key": null,
+                            "key_len": null,
+                            "ref": null,
+                            "rows": 20,
+                            "filtered": 100,
+                            "Extra": "Using where; Using join buffer (hash join)"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "vendor_owner",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.v.owner_user_id",
+                            "rows": 1,
+                            "filtered": 10,
+                            "Extra": "Using where"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "<derived2>",
+                            "partitions": null,
+                            "type": "ALL",
+                            "possible_keys": null,
+                            "key": null,
+                            "key_len": null,
+                            "ref": null,
+                            "rows": 2957,
+                            "filtered": 100,
+                            "Extra": "Using join buffer (hash join)"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "p",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY,idx_products_vendor_status,idx_products_category_status,idx_products_status_newest",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "offer.product_id",
+                            "rows": 1,
+                            "filtered": 5,
+                            "Extra": "Using where"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "b",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.p.brand_id",
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": "Using index"
+                        },
+                        {
+                            "id": 2,
+                            "select_type": "DERIVED",
+                            "table": "s",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "PRIMARY,idx_skus_product_active,idx_skus_price,idx_skus_active_product_price",
+                            "key": "idx_skus_active_product_price",
+                            "key_len": "1",
+                            "ref": "const",
+                            "rows": 5916,
+                            "filtered": 49.99577331542969,
+                            "Extra": "Using where; Using index"
+                        },
+                        {
+                            "id": 2,
+                            "select_type": "DERIVED",
+                            "table": "bt",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "uq_batches_sku_batch,idx_batches_fefo,idx_batches_status_expiry",
+                            "key": "idx_batches_fefo",
+                            "key_len": "90",
+                            "ref": "beautypals_s5_benchmark.s.id,const",
+                            "rows": 1,
+                            "filtered": 11.108888626098633,
+                            "Extra": "Using index condition; Using where; FirstMatch(s)"
+                        }
+                    ]
+                },
+                {
+                    "sql": "select `p`.`id`, `p`.`name`, `p`.`slug`, `p`.`description`, `p`.`vendor_id`, `p`.`brand_id`, `p`.`category_id`, `p`.`created_at`, `v`.`store_name` as `vendor_name`, `b`.`name` as `brand_name`, `c`.`name` as `category_name`, `offer`.`min_price` as `price`, `offer`.`in_stock`, (select `pi`.`path` from `product_images` as `pi` where `pi`.`product_id` = `p`.`id` order by `pi`.`sort` asc, `pi`.`id` asc limit 1) as `image_path` from `products` as `p` inner join `vendors` as `v` on `v`.`id` = `p`.`vendor_id` inner join `users` as `vendor_owner` on `vendor_owner`.`id` = `v`.`owner_user_id` inner join `categories` as `c` on `c`.`id` = `p`.`category_id` left join `brands` as `b` on `b`.`id` = `p`.`brand_id` inner join (select `s`.`product_id`, MIN(s.price) AS min_price, 1 AS in_stock from `skus` as `s` where `s`.`is_active` = ? and `s`.`price` >= ? and `s`.`price` <= ? and exists (select 1 from `batches` as `bt` where `bt`.`sku_id` = `s`.`id` and `bt`.`status` = ? and `bt`.`exp_date` >= ? and `bt`.`qty_on_hand` > `bt`.`qty_reserved`) group by `s`.`product_id`) as `offer` on `offer`.`product_id` = `p`.`id` where `p`.`status` = ? and `v`.`status` = ? and `vendor_owner`.`status` = ? order by `p`.`created_at` desc, `p`.`id` asc limit 12 offset 0",
+                    "bindings": [
+                        true,
+                        100000,
+                        400000,
+                        "active",
+                        "2026-11-24",
+                        "approved",
+                        "approved",
+                        "active"
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "c",
+                            "partitions": null,
+                            "type": "ALL",
+                            "possible_keys": "PRIMARY",
+                            "key": null,
+                            "key_len": null,
+                            "ref": null,
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": "Using temporary; Using filesort"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "v",
+                            "partitions": null,
+                            "type": "range",
+                            "possible_keys": "PRIMARY,uq_vendors_owner,idx_vendors_status",
+                            "key": "idx_vendors_status",
+                            "key_len": "82",
+                            "ref": null,
+                            "rows": 20,
+                            "filtered": 100,
+                            "Extra": "Using index condition; Using join buffer (hash join)"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "vendor_owner",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.v.owner_user_id",
+                            "rows": 1,
+                            "filtered": 10,
+                            "Extra": "Using where"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "<derived3>",
+                            "partitions": null,
+                            "type": "ALL",
+                            "possible_keys": null,
+                            "key": null,
+                            "key_len": null,
+                            "ref": null,
+                            "rows": 2957,
+                            "filtered": 100,
+                            "Extra": "Using join buffer (hash join)"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "p",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY,idx_products_vendor_status,idx_products_category_status,idx_products_status_newest",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "offer.product_id",
+                            "rows": 1,
+                            "filtered": 5,
+                            "Extra": "Using where"
+                        },
+                        {
+                            "id": 1,
+                            "select_type": "PRIMARY",
+                            "table": "b",
+                            "partitions": null,
+                            "type": "eq_ref",
+                            "possible_keys": "PRIMARY",
+                            "key": "PRIMARY",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.p.brand_id",
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": null
+                        },
+                        {
+                            "id": 3,
+                            "select_type": "DERIVED",
+                            "table": "s",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "PRIMARY,idx_skus_product_active,idx_skus_price,idx_skus_active_product_price",
+                            "key": "idx_skus_active_product_price",
+                            "key_len": "1",
+                            "ref": "const",
+                            "rows": 5916,
+                            "filtered": 49.99577331542969,
+                            "Extra": "Using where; Using index"
+                        },
+                        {
+                            "id": 3,
+                            "select_type": "DERIVED",
+                            "table": "bt",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "uq_batches_sku_batch,idx_batches_fefo,idx_batches_status_expiry",
+                            "key": "idx_batches_fefo",
+                            "key_len": "90",
+                            "ref": "beautypals_s5_benchmark.s.id,const",
+                            "rows": 1,
+                            "filtered": 11.108888626098633,
+                            "Extra": "Using index condition; Using where; FirstMatch(s)"
+                        },
+                        {
+                            "id": 2,
+                            "select_type": "DEPENDENT SUBQUERY",
+                            "table": "pi",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "idx_product_images_product_sort",
+                            "key": "idx_product_images_product_sort",
+                            "key_len": "8",
+                            "ref": "beautypals_s5_benchmark.p.id",
+                            "rows": 1,
+                            "filtered": 100,
+                            "Extra": "Using filesort"
+                        }
+                    ]
+                }
+            ]
+        },
+        "product_status_newest": {
+            "median_ms": 0.809,
+            "query_count": 1,
+            "result_sha256": "1c93cb8521ffe41dd9e756b954e76c1bdf6cc6d48c0f38f4a1e662cd362c38bc",
+            "total": 15,
+            "plans": [
+                {
+                    "sql": "select * from `products` where `status` = ? order by `created_at` desc, `id` asc limit 15",
+                    "bindings": [
+                        "approved"
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "SIMPLE",
+                            "table": "products",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "idx_products_status_newest",
+                            "key": "idx_products_status_newest",
+                            "key_len": "82",
+                            "ref": "const",
+                            "rows": 4800,
+                            "filtered": 100,
+                            "Extra": null
+                        }
+                    ]
+                }
+            ]
+        },
+        "vendor_orders_pending": {
+            "median_ms": 2.529,
+            "query_count": 2,
+            "result_sha256": "8470c4e7405ec7960ba597bffb740646e26b62df7b36afad158a95a9d8f40ac1",
+            "total": 200,
+            "plans": [
+                {
+                    "sql": "select count(*) as `aggregate` from `vendor_orders` where `vendor_id` = ? and `status` = ?",
+                    "bindings": [
+                        1,
+                        "pending"
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "SIMPLE",
+                            "table": "vendor_orders",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "idx_vendor_orders_vendor_status,idx_vendor_orders_autocomplete,idx_vendor_orders_settlement,idx_vendor_orders_status_latest",
+                            "key": "idx_vendor_orders_vendor_status",
+                            "key_len": "90",
+                            "ref": "const,const",
+                            "rows": 200,
+                            "filtered": 100,
+                            "Extra": "Using index"
+                        }
+                    ]
+                },
+                {
+                    "sql": "select * from `vendor_orders` where `vendor_id` = ? and `status` = ? order by `id` desc limit 15 offset 0",
+                    "bindings": [
+                        1,
+                        "pending"
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "SIMPLE",
+                            "table": "vendor_orders",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "idx_vendor_orders_vendor_status,idx_vendor_orders_autocomplete,idx_vendor_orders_settlement,idx_vendor_orders_status_latest",
+                            "key": "idx_vendor_orders_vendor_status",
+                            "key_len": "90",
+                            "ref": "const,const",
+                            "rows": 200,
+                            "filtered": 100,
+                            "Extra": "Using filesort"
+                        }
+                    ]
+                }
+            ]
+        },
+        "sku_active_prices": {
+            "median_ms": 5.744,
+            "query_count": 1,
+            "result_sha256": "8a1cb798d7df03607fdf6340c15699a8ceac69da69b9143b15049ac8da545bfc",
+            "total": 6000,
+            "plans": [
+                {
+                    "sql": "select `product_id`, MIN(price) as price from `skus` where `is_active` = ? group by `product_id`",
+                    "bindings": [
+                        true
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "SIMPLE",
+                            "table": "skus",
+                            "partitions": null,
+                            "type": "ref",
+                            "possible_keys": "idx_skus_product_active,idx_skus_active_product_price",
+                            "key": "idx_skus_active_product_price",
+                            "key_len": "1",
+                            "ref": "const",
+                            "rows": 5916,
+                            "filtered": 100,
+                            "Extra": "Using index"
+                        }
+                    ]
+                }
+            ]
+        },
+        "expired_batches": {
+            "median_ms": 3.144,
+            "query_count": 1,
+            "result_sha256": "2290f92ba03910927aab6a4462855df869cac826bdf69318a4e3b0979baffbec",
+            "total": 100,
+            "plans": [
+                {
+                    "sql": "select * from `batches` where `status` = ? and `exp_date` < ? order by `exp_date` asc, `id` asc limit 100",
+                    "bindings": [
+                        "active",
+                        "2026-11-24"
+                    ],
+                    "explain": [
+                        {
+                            "id": 1,
+                            "select_type": "SIMPLE",
+                            "table": "batches",
+                            "partitions": null,
+                            "type": "range",
+                            "possible_keys": "idx_batches_status_expiry",
+                            "key": "idx_batches_status_expiry",
+                            "key_len": "85",
+                            "ref": null,
+                            "rows": 22914,
+                            "filtered": 100,
+                            "Extra": "Using index condition"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
